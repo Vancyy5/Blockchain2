@@ -1,10 +1,7 @@
 #include "vartotojas.h"
 #include "transakcija.h"
 #include "blokas.h"
-#include <iostream>
-#include <vector>
-#include <memory>
-#include <random>
+#include "lib.h"
 
 const std::vector<std::string> VARDAI = {
     "Vanesa", "Jokūbas", "Gabija", "Vakarė", "Patricija",

@@ -1,12 +1,6 @@
 #include "transakcija.h"
 #include "vartotojas.h"
 #include "hashas.h"
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <random>
-#include <algorithm>
-#include <functional>
 
 // Hash generavimas naudojant jūsų hashas funkcija
 std::string Transakcija::generuotiHash(const std::string& sender, 

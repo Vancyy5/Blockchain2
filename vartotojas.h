@@ -1,8 +1,7 @@
 #ifndef VARTOTOJAS_H
 #define VARTOTOJAS_H
 
-#include <string>
-#include <vector>
+#include "lib.h"
 
 struct UTXO {
     std::string txid;

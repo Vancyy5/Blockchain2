@@ -1,10 +1,7 @@
 #ifndef TRANSAKCIJA_H
 #define TRANSAKCIJA_H
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <chrono>
+#include "lib.h"
 
 class Vartotojas;
 

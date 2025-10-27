@@ -1,9 +1,4 @@
 #include "vartotojas.h"
-#include <iostream>
-#include <random>
-#include <sstream>
-#include <iomanip>
-#include <algorithm>
 
 std::string Vartotojas::generuotiPublicKey() {
     static std::random_device rd;

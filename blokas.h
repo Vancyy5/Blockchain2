@@ -1,10 +1,7 @@
 #ifndef BLOKAS_H
 #define BLOKAS_H
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <chrono>
+#include "lib.h"
 #include "transakcija.h"
 
 // Bloko antraštės struktūra

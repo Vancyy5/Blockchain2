@@ -24,6 +24,9 @@
 #include <algorithm>
 #include <array>
 #include <numeric>
+#include <memory>
+#include <cmath>
+#include <functional>
 #ifdef _WIN32
 #include <windows.h>
 #endif

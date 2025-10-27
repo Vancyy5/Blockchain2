@@ -1,10 +1,5 @@
 #include "blokas.h"
 #include "hashas.h"
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <cmath>
-#include <algorithm>
 
 // ============= BlokoAntraste implementacija =============
 
