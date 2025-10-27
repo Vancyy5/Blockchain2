@@ -69,6 +69,9 @@ public:
                             std::vector<std::unique_ptr<Vartotojas>>& vartotojai);
     int vykdytiVisasTransakcijas(std::vector<std::unique_ptr<Vartotojas>>& vartotojai);
     
+    // NAUJA: Funkcija pašalinti transakcijas po bloko patvirtinimo
+    void pasalintiTransakcijas(const std::vector<std::shared_ptr<Transakcija>>& pasalinti);
+    
     size_t gautiKieki() const { return transakcijos.size(); }
     double gautiBendraSuma() const { return bendras_suma; }
     const std::vector<std::unique_ptr<Transakcija>>& gautiTransakcijas() const { 

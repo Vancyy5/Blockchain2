@@ -210,6 +210,23 @@ bool TransakcijuBaseinas::vykdytiTransakcija(
     Transakcija& transakcija,
     std::vector<std::unique_ptr<Vartotojas>>& vartotojai) {
     
+    // Skip COINBASE transactions
+    if (transakcija.gautiSender() == "COINBASE") {
+        Vartotojas* receiver = nullptr;
+        for (auto& v : vartotojai) {
+            if (v->gautiPublicKey() == transakcija.gautiReceiver()) {
+                receiver = v.get();
+                break;
+            }
+        }
+        
+        if (receiver) {
+            receiver->pridetiUTXO(UTXO(transakcija.gautiTransactionId(), 0, transakcija.gautiAmount()));
+            return true;
+        }
+        return false;
+    }
+    
     Vartotojas* sender = nullptr;
     Vartotojas* receiver = nullptr;
     
@@ -283,6 +300,22 @@ int TransakcijuBaseinas::vykdytiVisasTransakcijas(
     std::cout << "Failed: " << nesekmingos << "\n\n";
     
     return sekmingos;
+}
+
+// NAUJA FUNKCIJA: Pašalina transakcijas iš baseino pagal ID
+void TransakcijuBaseinas::pasalintiTransakcijas(const std::vector<std::shared_ptr<Transakcija>>& pasalinti) {
+    std::set<std::string> pasalinti_ids;
+    for (const auto& tx : pasalinti) {
+        pasalinti_ids.insert(tx->gautiTransactionId());
+    }
+    
+    auto nauja_pabaiga = std::remove_if(transakcijos.begin(), transakcijos.end(),
+        [&pasalinti_ids](const std::unique_ptr<Transakcija>& tx) {
+            return pasalinti_ids.count(tx->gautiTransactionId()) > 0;
+        });
+    
+    transakcijos.erase(nauja_pabaiga, transakcijos.end());
+    perskaiciuotiBendraSuma();
 }
 
 void TransakcijuBaseinas::spausdintiStatistika() const {

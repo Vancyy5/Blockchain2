@@ -27,6 +27,8 @@
 #include <memory>
 #include <cmath>
 #include <functional>
+#include <set>
+#define NOMINMAX
 #ifdef _WIN32
 #include <windows.h>
 #endif
