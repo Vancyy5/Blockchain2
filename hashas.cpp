@@ -3,8 +3,7 @@
 map<wchar_t, uint16_t> getLithuanianCharMap() 
 {
     map<wchar_t, uint16_t> charMap;
-
-   
+    
     charMap[L'ą'] = 0xC485;  
     charMap[L'č'] = 0xC48D;  
     charMap[L'ę'] = 0xC499;  
@@ -14,7 +13,6 @@ map<wchar_t, uint16_t> getLithuanianCharMap()
     charMap[L'ų'] = 0xC5B3;  
     charMap[L'ū'] = 0xC5AB;  
     charMap[L'ž'] = 0xC5BE;  
-
     
     charMap[L'Ą'] = 0xC484;  
     charMap[L'Č'] = 0xC48C;  
@@ -51,103 +49,45 @@ string convertLithuanianText(const string &input) {
     return result;
 }
 
-
 void hashas(const string &ivestis, string &isvestis) 
 {
     isvestis.clear();
 
     string konvertuotasIvestis = convertLithuanianText(ivestis);
 
-    string seedString;
-    string seedui;
-    if (!konvertuotasIvestis.empty()) {
-        // kas 1000 simbolių ASCII suma
-        for (size_t i = 0; i < konvertuotasIvestis.size(); i += 1000) {
-            int suma = 0;
-            for (size_t j = i; j < i + 10 && j < konvertuotasIvestis.size(); j++) {
-                suma += static_cast<unsigned char>(konvertuotasIvestis[j]);
-            }
-            seedString += to_string(suma);
-        }
-
-        // kas 20 simbolių '1' bitų kiekis
-        for (size_t i = 0; i < konvertuotasIvestis.size(); i += 20) {
-            int ones = 0;
-            for (size_t j = i; j < i + 20 && j < konvertuotasIvestis.size(); j++) {
-                bitset<8> bits(static_cast<unsigned char>(konvertuotasIvestis[j]));
-                ones += bits.count();
-            }
-            seedString += to_string(ones);
-            seedui+= to_string(ones);
-        }
-    } else {
-        seedString = "0";
+    // Skaiciuojame seed is VISO input stringo
+    uint32_t seed = 5381; // DJB2 hash pradine reiksme
+    
+    for (size_t i = 0; i < konvertuotasIvestis.size(); i++) {
+        seed = ((seed << 5) + seed) + static_cast<unsigned char>(konvertuotasIvestis[i]);
     }
 
-    // Įvesties binary kodas
-    string binaryInput;
-    for (unsigned char c : konvertuotasIvestis) {
-        binaryInput += bitset<8>(c).to_string();
-    }
+    mt19937 rng(seed);
 
-    // jeigu tuščias, sukuriame bent 1 baitą (10000000)
-    if (binaryInput.empty()) {
-        binaryInput = "10000000";
-    }
-
-    // prailginam iki 256 bitų
-    string originalBinary = binaryInput;
-    while (binaryInput.size() < 256) {
-        string toAdd = originalBinary;
-        // XOR su jau esančiais bitais
-        for (size_t i = 0; i < toAdd.size() && binaryInput.size() < 256; i++) {
-            char newBit = (binaryInput[i % binaryInput.size()] == toAdd[i]) ? '0' : '1';
-            binaryInput += newBit;
-        }
-    }
-    if (binaryInput.size() > 256) {
-        binaryInput = binaryInput.substr(0, 256);
-    }
-
-    uint32_t mySeed = safeStringToUint32(seedString, seedui);
-    mt19937 rng(mySeed);
-
-    // Maišymas
-    string mixedBinary;
-    for (size_t i = 0; i < binaryInput.size(); i += 32) {
-        uint32_t randVal = rng();
-        for (size_t j = 0; j < 32 && i + j < binaryInput.size(); j++) {
-            int bit = binaryInput[i + j] - '0';
-            int rbit = (randVal >> j) & 1;
-            bit ^= rbit;
-            mixedBinary.push_back(bit ? '1' : '0');
-        }
-    }
-
-    // konversija į HEX
-    for (size_t i = 0; i + 4 <= mixedBinary.size(); i += 4) {
-        string nibble = mixedBinary.substr(i, 4);
-        int value = stoi(nibble, nullptr, 2);
+    // Generuojame 64 hex simbolius (256 bitai)
+    uniform_int_distribution<> hex_dist(0, 15);
+    
+    for (int i = 0; i < 64; i++) {
+        int val = hex_dist(rng);
         stringstream ss;
-        ss << hex << value;
+        ss << hex << val;
         isvestis += ss.str();
     }
 }
-uint32_t safeStringToUint32(const string& str,const string& seedui) 
+
+uint32_t safeStringToUint32(const string& str, const string& seedui) 
 {
     string truncated = str;
     if (truncated.length() > 9) {
-
         truncated = truncated.substr(0, 9);
     }
     
-     uint32_t seed = 0;
+    uint32_t seed = 0;
     for (unsigned char c : seedui) 
     {
         seed = seed * 31 + c; 
     }
     uint32_t hash = seed;
-
     
     for (unsigned char c : truncated) 
     {
@@ -155,5 +95,4 @@ uint32_t safeStringToUint32(const string& str,const string& seedui)
     }
 
     return hash;
-    
 }

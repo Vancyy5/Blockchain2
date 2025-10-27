@@ -1,5 +1,6 @@
 #include "blokas.h"
 #include "hashas.h"
+#include "laikas.h"
 
 BlokoAntraste::BlokoAntraste()
     : prev_block_hash("0"), 
@@ -74,10 +75,11 @@ bool Blokas::arValidusHash(const std::string& hash) const {
 bool Blokas::atliktiProofOfWork() {
     const uint64_t MAX_NONCE = 10000000;
     
-    std::cout << "Starting mining process (Difficulty: " 
+    std::cout << "Pradedamas kasimo procesas (Sunkumas: " 
               << antraste.difficulty_target << ")...\n";
     
-    auto start_time = std::chrono::high_resolution_clock::now();
+    Laikas kasimo_laikas("Bloko kasimas");
+    kasimo_laikas.pradeti();
     
     for (uint64_t n = 0; n < MAX_NONCE; ++n) {
         antraste.nonce = n;
@@ -86,22 +88,19 @@ bool Blokas::atliktiProofOfWork() {
         if (arValidusHash(hash)) {
             bloko_hash = hash;
             
-            auto end_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-                end_time - start_time).count();
+            kasimo_laikas.baigti();
             
-            std::cout << "Block mined! Nonce: " << n 
-                     << ", Time: " << duration << " ms\n";
+            std::cout << "Blokas iskastas! Nonce: " << n << "\n";
             std::cout << "Hash: " << hash << "\n\n";
             return true;
         }
         
         if (n % 50000 == 0 && n > 0) {
-            std::cout << "Attempts: " << n << "...\n";
+            std::cout << "Bandymu: " << n << "...\n";
         }
     }
     
-    std::cout << "Failed to find valid hash after " << MAX_NONCE << " attempts\n";
+    std::cout << "Nepavyko rasti tinkamo hash po " << MAX_NONCE << " bandymu\n";
     return false;
 }
 
@@ -119,7 +118,7 @@ Blokas::Blokas(uint32_t numeris,
     antraste.nonce = 0;
     
     // Add Coinbase transaction (block reward)
-    double block_reward = 50.0; // Configurable reward
+    double block_reward = 50.0;
     auto coinbase = std::make_shared<Transakcija>(
         "COINBASE",
         miner_address,
@@ -137,7 +136,7 @@ Blokas::Blokas(uint32_t numeris,
     antraste.merkle_root = skaiciuotiMerkleRoot();
     
     if (!atliktiProofOfWork()) {
-        throw std::runtime_error("Failed to create block - mining failed");
+        throw std::runtime_error("Nepavyko sukurti bloko - kasimas nepavyko");
     }
 }
 
@@ -203,35 +202,34 @@ double Blokas::gautiBendraTransakcijuSuma() const {
 }
 
 void Blokas::spausdintiInfo() const {
-    std::cout << "\n╔══════════════════════════════════════════════════════════════╗\n";
-    std::cout << "║                        BLOCK #" << std::setw(4) << bloko_numeris 
-              << "                          ║\n";
-    std::cout << "╠══════════════════════════════════════════════════════════════╣\n";
+    std::cout << "\n======================================================\n";
+    std::cout << "                    BLOKAS #" << std::setw(4) << bloko_numeris 
+              << "                      \n";
+    std::cout << "======================================================\n";
     
-    std::cout << "║ Hash:         " << bloko_hash.substr(0, 40) << "... ║\n";
-    std::cout << "║ Prev Hash:    " << antraste.prev_block_hash.substr(0, 40) << "... ║\n";
-    std::cout << "║ Merkle Root:  " << antraste.merkle_root.substr(0, 40) << "... ║\n";
+    std::cout << "Hash:         " << bloko_hash.substr(0, 40) << "...\n";
+    std::cout << "Prev Hash:    " << antraste.prev_block_hash.substr(0, 40) << "...\n";
+    std::cout << "Merkle Root:  " << antraste.merkle_root.substr(0, 40) << "...\n";
     
     auto time_t = std::chrono::system_clock::to_time_t(antraste.timestamp);
-    std::cout << "║ Timestamp:    " << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S") 
-              << "                         ║\n";
+    std::cout << "Laikas:       " << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S") 
+              << "\n";
     
-    std::cout << "║ Version:      " << antraste.version << "                                              ║\n";
-    std::cout << "║ Nonce:        " << std::setw(10) << antraste.nonce << "                                     ║\n";
-    std::cout << "║ Difficulty:   " << antraste.difficulty_target << "                                              ║\n";
-    std::cout << "║ Transactions: " << std::setw(4) << transakcijos.size() 
-              << "                                         ║\n";
-    std::cout << "║ Total Amount: " << std::fixed << std::setprecision(2) 
-              << std::setw(12) << gautiBendraTransakcijuSuma() << " units                        ║\n";
+    std::cout << "Versija:      " << antraste.version << "\n";
+    std::cout << "Nonce:        " << std::setw(10) << antraste.nonce << "\n";
+    std::cout << "Sunkumas:     " << antraste.difficulty_target << "\n";
+    std::cout << "Transakciju:  " << std::setw(4) << transakcijos.size() << "\n";
+    std::cout << "Bendra suma:  " << std::fixed << std::setprecision(2) 
+              << std::setw(12) << gautiBendraTransakcijuSuma() << " vnt.\n";
     
-    std::cout << "╚══════════════════════════════════════════════════════════════╝\n";
+    std::cout << "======================================================\n";
 }
 
 void Blokas::spausdintiVisasTransakcijas() const {
-    std::cout << "\n=== BLOCK #" << bloko_numeris << " TRANSACTIONS ===\n\n";
+    std::cout << "\n=== BLOKO #" << bloko_numeris << " TRANSAKCIJOS ===\n\n";
     
     for (size_t i = 0; i < transakcijos.size(); ++i) {
-        std::cout << "--- Transaction #" << (i + 1) << " ---\n";
+        std::cout << "--- Transakcija #" << (i + 1) << " ---\n";
         transakcijos[i]->spausdintiInfo();
         std::cout << "\n";
     }
@@ -249,7 +247,7 @@ void Blockchain::sukurtiGenesisBloka() {
     );
     
     grandine.push_back(std::move(genesis));
-    std::cout << "Genesis block created!\n";
+    std::cout << "Genesis blokas sukurtas!\n";
 }
 
 Blockchain::Blockchain(uint32_t difficulty)
@@ -264,20 +262,20 @@ bool Blockchain::pridetiBloka(std::unique_ptr<Blokas> blokas) {
     if (!blokas) return false;
     
     if (!blokas->arValid()) {
-        std::cout << "Invalid block!\n";
+        std::cout << "Netinkamas blokas!\n";
         return false;
     }
     
     if (!grandine.empty()) {
         const auto& paskutinis = grandine.back();
         if (blokas->gautiPrevHash() != paskutinis->gautiBlokoHash()) {
-            std::cout << "Block prev_hash does not match last block!\n";
+            std::cout << "Bloko prev_hash neatitinka paskutinio bloko!\n";
             return false;
         }
     }
     
     grandine.push_back(std::move(blokas));
-    std::cout << "Block successfully added to chain!\n";
+    std::cout << "Blokas sekmingai pridetas i grandine!\n";
     return true;
 }
 
@@ -307,24 +305,23 @@ const Blokas* Blockchain::gautiPaskutiniBloka() const {
 
 void Blockchain::spausdintiGrandine() const {
     std::cout << "\n";
-    std::cout << "══════════════════════════════════════════════════════════════\n";
-    std::cout << "                      BLOCKCHAIN CHAIN                       \n";
-    std::cout << "══════════════════════════════════════════════════════════════\n";
+    std::cout << "==========================================================\n";
+    std::cout << "                   BLOCKCHAIN GRANDINE                    \n";
+    std::cout << "==========================================================\n";
     
     for (const auto& blokas : grandine) {
         blokas->spausdintiInfo();
     }
     
-    std::cout << "\n══════════════════════════════════════════════════════════════\n";
+    std::cout << "\n==========================================================\n";
 }
 
 void Blockchain::spausdintiStatistika() const {
-    std::cout << "\n╔══════════════════════════════════════════════════════════════╗\n";
-    std::cout << "║                   BLOCKCHAIN STATISTICS                      ║\n";
-    std::cout << "╠══════════════════════════════════════════════════════════════╣\n";
+    std::cout << "\n======================================================\n";
+    std::cout << "               BLOCKCHAIN STATISTIKA                  \n";
+    std::cout << "======================================================\n";
     
-    std::cout << "║ Block count:        " << std::setw(6) << grandine.size() 
-              << "                                 ║\n";
+    std::cout << "Bloku skaicius:      " << std::setw(6) << grandine.size() << "\n";
     
     size_t bendras_tx = 0;
     double bendra_suma = 0.0;
@@ -334,14 +331,11 @@ void Blockchain::spausdintiStatistika() const {
         bendra_suma += blokas->gautiBendraTransakcijuSuma();
     }
     
-    std::cout << "║ Transaction count:  " << std::setw(6) << bendras_tx 
-              << "                                 ║\n";
-    std::cout << "║ Total amount:       " << std::fixed << std::setprecision(2) 
-              << std::setw(14) << bendra_suma << " units                  ║\n";
-    std::cout << "║ Difficulty:         " << std::setw(6) << difficulty_target 
-              << "                                 ║\n";
-    std::cout << "║ Chain valid:        " << (arGrandineValidi() ? "YES" : "NO ") 
-              << "                                    ║\n";
+    std::cout << "Transakciju skaicius:" << std::setw(6) << bendras_tx << "\n";
+    std::cout << "Bendra suma:         " << std::fixed << std::setprecision(2) 
+              << std::setw(14) << bendra_suma << " vnt.\n";
+    std::cout << "Sunkumas:            " << std::setw(6) << difficulty_target << "\n";
+    std::cout << "Grandine validi:     " << (arGrandineValidi() ? "TAIP" : "NE  ") << "\n";
     
-    std::cout << "╚══════════════════════════════════════════════════════════════╝\n";
+    std::cout << "======================================================\n";
 }

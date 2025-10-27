@@ -15,7 +15,7 @@ const std::vector<std::string> VARDAI = {
 void issaugotiVartotojus(const std::vector<std::unique_ptr<Vartotojas>>& vartotojai, const std::string& failas) {
     std::ofstream out(failas);
     if (!out.is_open()) {
-        std::cout << "Error: Cannot open file " << failas << "\n";
+        std::cout << "Klaida: Nepavyko atidaryti failo " << failas << "\n";
         return;
     }
     
@@ -27,13 +27,13 @@ void issaugotiVartotojus(const std::vector<std::unique_ptr<Vartotojas>>& vartoto
             << v->gautiUTXO().size() << "\n";
     }
     out.close();
-    std::cout << "Users saved to " << failas << "\n";
+    std::cout << "Vartotojai issaugoti i " << failas << "\n";
 }
 
 void issaugotiTransakcijas(const TransakcijuBaseinas& baseinas, const std::string& failas) {
     std::ofstream out(failas);
     if (!out.is_open()) {
-        std::cout << "Error: Cannot open file " << failas << "\n";
+        std::cout << "Klaida: Nepavyko atidaryti failo " << failas << "\n";
         return;
     }
     
@@ -48,13 +48,13 @@ void issaugotiTransakcijas(const TransakcijuBaseinas& baseinas, const std::strin
             << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S") << "\n";
     }
     out.close();
-    std::cout << "Transactions saved to " << failas << "\n";
+    std::cout << "Transakcijos issaugotos i " << failas << "\n";
 }
 
 void issaugotiBlockchain(const Blockchain& blockchain, const std::string& failas) {
     std::ofstream out(failas);
     if (!out.is_open()) {
-        std::cout << "Error: Cannot open file " << failas << "\n";
+        std::cout << "Klaida: Nepavyko atidaryti failo " << failas << "\n";
         return;
     }
     
@@ -76,7 +76,7 @@ void issaugotiBlockchain(const Blockchain& blockchain, const std::string& failas
             << std::fixed << std::setprecision(2) << blokas->gautiBendraTransakcijuSuma() << "\n";
     }
     out.close();
-    std::cout << "Blockchain saved to " << failas << "\n";
+    std::cout << "Blockchain issaugotas i " << failas << "\n";
 }
 
 void sukurtiAplankaJeiguNeegzistuoja(const std::string& path) {
@@ -93,27 +93,27 @@ int main() {
     int pasirinkimas;
     
     while (true) {
-        std::cout << "\n=== BLOCKCHAIN SYSTEM ===\n";
-        std::cout << "1. Generate 1000 users\n";
-        std::cout << "2. Generate 10000 transactions\n";
-        std::cout << "3. Create new block\n";
-        std::cout << "4. Print blockchain\n";
-        std::cout << "5. Print statistics\n";
-        std::cout << "6. Save data to files\n";
-        std::cout << "0. Exit\n";
-        std::cout << "Choice: ";
+        std::cout << "\n=== BLOCKCHAIN SISTEMA ===\n";
+        std::cout << "1. Generuoti 1000 vartotoju\n";
+        std::cout << "2. Generuoti 10000 transakciju\n";
+        std::cout << "3. Sukurti nauja bloka\n";
+        std::cout << "4. Spausdinti blockchain\n";
+        std::cout << "5. Spausdinti statistika\n";
+        std::cout << "6. Issaugoti duomenis i failus\n";
+        std::cout << "0. Iseiti\n";
+        std::cout << "Pasirinkimas: ";
         std::cin >> pasirinkimas;
         
         if (std::cin.fail()) {
             std::cin.clear();
             std::cin.ignore(10000, '\n');
-            std::cout << "\nInvalid choice!\n";
+            std::cout << "\nNetinkamas pasirinkimas!\n";
             continue;
         }
         
         switch (pasirinkimas) {
             case 1: {
-                Laikas timer("User generation");
+                Laikas timer("Vartotoju generavimas");
                 timer.pradeti();
                 
                 std::random_device rd;
@@ -122,7 +122,7 @@ int main() {
                 std::uniform_real_distribution<> balansas_dis(100.0, 1000000.0);
                 
                 vartotojai.clear();
-                std::cout << "\nGenerating 1000 users...\n";
+                std::cout << "\nGeneruojami 1000 vartotoju...\n";
                 
                 for (int i = 0; i < 1000; ++i) {
                     std::string vardas = VARDAI[vardas_dis(gen)] + std::to_string(i + 1);
@@ -130,21 +130,21 @@ int main() {
                     vartotojai.push_back(std::make_unique<Vartotojas>(vardas, balansas));
                     
                     if ((i + 1) % 100 == 0) {
-                        std::cout << "Generated: " << (i + 1) << "/1000\n";
+                        std::cout << "Sugeneruota: " << (i + 1) << "/1000\n";
                     }
                 }
                 
                 timer.baigti();
-                std::cout << "Successfully generated 1000 users!\n";
+                std::cout << "Sekmingai sugeneruoti 1000 vartotoju!\n";
                 break;
             }
             case 2: {
                 if (vartotojai.size() < 2) {
-                    std::cout << "\nError: Generate users first!\n";
+                    std::cout << "\nKlaida: Pirmiausia sugeneruokite vartotojus!\n";
                     break;
                 }
                 
-                Laikas timer("Transaction generation");
+                Laikas timer("Transakciju generavimas");
                 timer.pradeti();
                 
                 baseinas.isvalyti();
@@ -156,15 +156,15 @@ int main() {
             }
             case 3: {
                 if (baseinas.gautiKieki() < 100) {
-                    std::cout << "\nError: Not enough transactions (need 100)!\n";
+                    std::cout << "\nKlaida: Nepakanka transakciju (reikia 100)!\n";
                     break;
                 }
                 
                 if (!blockchain) {
-                    blockchain = std::make_unique<Blockchain>(3); // Difficulty = 3
+                    blockchain = std::make_unique<Blockchain>(3); // Sunkumas = 3
                 }
                 
-                Laikas timer("Block mining");
+                Laikas timer("Bloko kasimas");
                 timer.pradeti();
                 
                 const auto& visos_tx = baseinas.gautiTransakcijas();
@@ -208,7 +208,7 @@ int main() {
             }
             case 4: {
                 if (!blockchain || blockchain->gautiIlgi() == 0) {
-                    std::cout << "\nBlockchain is empty!\n";
+                    std::cout << "\nBlockchain tuščias!\n";
                     break;
                 }
                 blockchain->spausdintiGrandine();
@@ -216,7 +216,7 @@ int main() {
             }
             case 5: {
                 if (!blockchain || blockchain->gautiIlgi() == 0) {
-                    std::cout << "\nBlockchain is empty!\n";
+                    std::cout << "\nBlockchain tuščias!\n";
                     break;
                 }
                 blockchain->spausdintiStatistika();
@@ -227,25 +227,25 @@ int main() {
                 timer.pradeti();
                 
                 if (!vartotojai.empty()) {
-                    issaugotiVartotojus(vartotojai, "output/users.csv");
+                    issaugotiVartotojus(vartotojai, "output/vartotojai.csv");
                 }
                 if (baseinas.gautiKieki() > 0) {
-                    issaugotiTransakcijas(baseinas, "output/transactions.csv");
+                    issaugotiTransakcijas(baseinas, "output/transakcijos.csv");
                 }
                 if (blockchain && blockchain->gautiIlgi() > 0) {
                     issaugotiBlockchain(*blockchain, "output/blockchain.csv");
                 }
                 
                 timer.baigti();
-                std::cout << "\nAll data saved to 'output' folder!\n";
+                std::cout << "\nIssaugota 'output' albume!\n";
                 break;
             }
             case 0: {
-                std::cout << "\nThank you!\n";
+                std::cout << "\nViso gero!\n";
                 return 0;
             }
             default: {
-                std::cout << "\nInvalid choice!\n";
+                std::cout << "\nNetinkama įvestis!\n";
             }
         }
     }
