@@ -1,6 +1,6 @@
 #include "vartotojas.h"
 #include "transakcija.h"
-#include "blokas.h"
+#include "blokasirgrandine.h"
 #include "lib.h"
 #include "laikas.h"
 

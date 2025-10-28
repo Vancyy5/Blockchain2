@@ -1,5 +1,5 @@
-#ifndef BLOKAS_H
-#define BLOKAS_H
+#ifndef BLOKASIRGRANDINE_H
+#define BLOKASIRGRANDINE_H
 
 #include "lib.h"
 #include "transakcija.h"
