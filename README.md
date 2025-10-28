@@ -16,7 +16,7 @@
 3. Vartotojų generavimas (~1000)  
 4. Transakcijų generavimas (~10000)  
 5. Proof-of-Work kasimo procesas  
-6. UTXO modelio realizavimas (+0.5 balo)  
+6. UTXO modelio realizavimas  
 7. Detalus konsolės išvedimas su vizualizacijomis  
 8. OOP principų taikymas (enkapsuliacija, RAII, konstruktoriai)
 
@@ -58,7 +58,7 @@ xcode-select --install
 
 ## Kompiliavimas ir paleidimas
 
-### Naudojant Makefile (REKOMENDUOJAMA)
+### Naudojant Makefile 
 
 **Linux / MacOS / Git Bash (Windows):**
 
@@ -84,13 +84,13 @@ make && make run
 
 ### Meniu sistema
 
-![Meniu](/nuotraukos/Screenshot 2025-10-28 115813.png)
+![Meniu](<nuotraukos/Screenshot 2025-10-28 115813.png>)
 
 ### Išvesties failai
 
-![Output failai](nuotraukos/Screenshot 2025-10-28 115701 copy.png)
+![Output failai](<nuotraukos/Screenshot 2025-10-28 115701 copy.png>)
 
-![Output failai](nuotraukos/Screenshot 2025-10-28 120145.png)
+![Output failai](<nuotraukos/Screenshot 2025-10-28 120145.png>)
 
 ## Pagrindinės klasės
 
@@ -120,9 +120,9 @@ struct UTXO {
 };
 ```
 
-![Vartotojas](nuotraukos/Screenshot 2025-10-28 115840.png)
+![Vartotojas](<nuotraukos/Screenshot 2025-10-28 115840.png>)
 
-![Vartotojas](nuotraukos/Screenshot 2025-10-28 115853.png)
+![Vartotojas](<nuotraukos/Screenshot 2025-10-28 115853.png>)
 
 ### 2. `Transakcija` (transakcija.h/.cpp)
 
@@ -142,9 +142,9 @@ Reprezentuoja vieną pervedimą tarp vartotojų.
 - `arValid()` - Patikrina transakcijos validumą
 - `generuotiHash()` - Generuoja unikalų transakcijos ID
 
-![Transakcija](nuotraukos/Screenshot 2025-10-28 115906.png)
+![Transakcija](<nuotraukos/Screenshot 2025-10-28 115906.png>)
 
-![Transakcija](nuotraukos/Screenshot 2025-10-28 115921.png)
+![Transakcija](<nuotraukos/Screenshot 2025-10-28 115921.png>)
 
 ### 3. `TransakcijuBaseinas` (transakcija.h/.cpp)
 
@@ -156,7 +156,7 @@ Valdo laukiančių transakcijų sąrašą (mempool).
 - `pasalintiTransakcijas(txs)` - Pašalina patvirtintas transakcijas
 - `spausdintiStatistika()` - Rodo baseino statistiką
 
-![Transakcijubaseinas](nuotraukos/Screenshot 2025-10-28 120132.png)
+![Transakcijubaseinas](<nuotraukos/Screenshot 2025-10-28 120132.png>)
 
 ### 4. `BlokoAntraste` (blokasirgrandine.h/.cpp)
 
@@ -193,7 +193,7 @@ Vienas blokų grandinės blokas.
 - `arValidusHash(hash)` - Tikrina ar hash prasideda nuliais
 - `arValid()` - Pilnas bloko validavimas
 
-![Blokas](nuotraukos/Screenshot 2025-10-28 120010.png)
+![Blokas](<nuotraukos/Screenshot 2025-10-28 120010.png>)
 
 ### 6. `Blockchain` (blokasirgrandine.h/.cpp)
 
@@ -206,7 +206,7 @@ Visa blokų grandinė.
 - `spausdintiGrandine()` - Vizualizuoja visus blokus
 - `spausdintiStatistika()` - Rodo statistiką
 
-![Blokas](nuotraukos/Screenshot 2025-10-28 120027.png)
+![Blokas](<nuotraukos/Screenshot 2025-10-28 120027.png>)
 
 ## UTXO modelio realizavimas
 
