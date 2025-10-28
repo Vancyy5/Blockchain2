@@ -52,7 +52,7 @@ double Vartotojas::skaiciuotiBalansa() const {
 Vartotojas::Vartotojas(const std::string& vardas, double pradinis_balansas)
     : vardas(vardas), public_key(generuotiPublicKey()) {
     if (pradinis_balansas < 0) {
-        throw std::invalid_argument("Balansas negali būti neigiamas");
+        throw std::invalid_argument("Balansas negali buti neigiamas");
     }
     generuotiPradinisUTXO(pradinis_balansas);
 }
@@ -116,7 +116,7 @@ void Vartotojas::spausdintiInfo() const {
 }
 
 void Vartotojas::spausdintiUTXO() const {
-    std::cout << "\n=== UTXO sąrašas ===\n";
+    std::cout << "\n=== UTXO sarasas ===\n";
     for (size_t i = 0; i < utxo_rinkinys.size(); ++i) {
         const auto& utxo = utxo_rinkinys[i];
         std::cout << i + 1 << ". TXID: " << utxo.txid.substr(0, 16) << "...\n";

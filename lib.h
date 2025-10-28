@@ -1,37 +1,49 @@
 #ifndef LIB_H      
 #define LIB_H
 
-
-#include <iostream>  
-#include <string>
-#include <fstream>
-#include <random>
-#include <vector>
-#include <cstdlib>  
-#include <utility>  
-#include <bitset>
-#include <sstream>
-#include <map>
-#include <chrono>
-#include <locale>
-#include <codecvt>
-#include <iomanip>
-#include <io.h>     
-#include <fcntl.h>
-#include <ctime>
-#include <charconv>
-#include <cstdint>
-#include <algorithm>
-#include <array>
-#include <numeric>
-#include <memory>
-#include <cmath>
-#include <functional>
-#include <set>
-#define NOMINMAX
+// Windows specific (tik jei reikia) - PIRMIAU NEI kiti headeriai
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 #endif
+
+// Standartine I/O
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+// Kontaineriai
+#include <string>
+#include <vector>
+#include <map>
+#include <set>
+
+// Atmintis
+#include <memory>
+
+// Algoritmai
+#include <algorithm>
+#include <utility>
+#include <functional>
+
+// Matematika
+#include <random>
+#include <cmath>
+#include <cstdint>
+
+// Laikas
+#include <chrono>
+#include <ctime>
+
+// Formatavimas
+#include <iomanip>
+#include <bitset>
+
+// Lokalizacija
+#include <locale>
+#include <codecvt>
 
 using namespace std;
 

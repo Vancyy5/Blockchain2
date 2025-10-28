@@ -26,7 +26,7 @@ Transakcija::Transakcija(const std::string& sender,
     : sender_key(sender), receiver_key(receiver), amount(amount) {
     
     if (amount <= 0) {
-        throw std::invalid_argument("Transaction amount must be positive");
+        throw std::invalid_argument("Transakcijos suma turi buti teigiama");
     }
     
     timestamp = generuotiTimestamp();
@@ -43,7 +43,7 @@ Transakcija::Transakcija(const std::string& sender,
     : sender_key(sender), receiver_key(receiver), amount(amount), timestamp(ts) {
     
     if (amount <= 0) {
-        throw std::invalid_argument("Transaction amount must be positive");
+        throw std::invalid_argument("Transakcijos suma turi buti teigiama");
     }
     
     auto timestamp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -94,7 +94,7 @@ Transakcija& Transakcija::operator=(Transakcija&& kita) noexcept {
 }
 
 bool Transakcija::arValid() const {
-    // Coinbase transactions can have COINBASE as sender
+    // Coinbase transakcijos gali tureti COINBASE kaip siunteja
     if (sender_key == "COINBASE") {
         return !transaction_id.empty() && 
                !receiver_key.empty() && 
@@ -110,12 +110,12 @@ bool Transakcija::arValid() const {
 
 void Transakcija::spausdintiInfo() const {
     std::cout << "TX ID: " << transaction_id.substr(0, 16) << "...\n";
-    std::cout << "Sender: " << sender_key.substr(0, 20) << "...\n";
-    std::cout << "Receiver: " << receiver_key.substr(0, 20) << "...\n";
-    std::cout << "Amount: " << std::fixed << std::setprecision(2) << amount << " units\n";
+    std::cout << "Siuntejas: " << sender_key.substr(0, 20) << "...\n";
+    std::cout << "Gavejas: " << receiver_key.substr(0, 20) << "...\n";
+    std::cout << "Suma: " << std::fixed << std::setprecision(2) << amount << " vnt.\n";
     
     auto time_t = std::chrono::system_clock::to_time_t(timestamp);
-    std::cout << "Time: " << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S") << "\n";
+    std::cout << "Laikas: " << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S") << "\n";
 }
 
 TransakcijuBaseinas::TransakcijuBaseinas() : bendras_suma(0.0) {
@@ -143,7 +143,7 @@ void TransakcijuBaseinas::generuotiTransakcijas(
     int kiekis) {
     
     if (vartotojai.size() < 2) {
-        std::cout << "Not enough users to generate transactions!\n";
+        std::cout << "Per mazai vartotoju transakcijoms generuoti!\n";
         return;
     }
     
@@ -151,12 +151,22 @@ void TransakcijuBaseinas::generuotiTransakcijas(
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> vartotojas_dis(0, vartotojai.size() - 1);
     
-    std::cout << "\nGenerating transactions...\n";
-    std::cout << "Please wait...\n\n";
+    std::cout << "\n";
+    std::cout << "========================================================\n";
+    std::cout << "         TRANSAKCIJU GENERAVIMO PROCESAS                \n";
+    std::cout << "========================================================\n";
+    std::cout << "Tikslas: Sugeneruoti " << kiekis << " transakciju\n";
+    std::cout << "Vartotoju: " << vartotojai.size() << "\n";
+    std::cout << "========================================================\n\n";
     
     int sekmingos = 0;
     int bandymai = 0;
     const int max_bandymai = kiekis * 3;
+    
+    // Parodome kelias pirmas transakcijas detales
+    bool rodyti_detales = true;
+    int detales_parodytos = 0;
+    const int max_detales = 5;
     
     while (sekmingos < kiekis && bandymai < max_bandymai) {
         bandymai++;
@@ -191,26 +201,51 @@ void TransakcijuBaseinas::generuotiTransakcijas(
                 tx_time
             );
             
+            // Rodome detales pirmu transakciju
+            if (rodyti_detales && detales_parodytos < max_detales) {
+                std::cout << "\n--- TRANSAKCIJA #" << (sekmingos + 1) << " ---\n";
+                std::cout << "Siuntejas: " << sender->gautiVarda() 
+                          << " (Balansas: " << std::fixed << std::setprecision(2) 
+                          << sender_balansas << " vnt.)\n";
+                std::cout << "Gavejas: " << receiver->gautiVarda() << "\n";
+                std::cout << "Suma: " << amount << " vnt.\n";
+                std::cout << "TX ID: " << tx->gautiTransactionId().substr(0, 32) << "...\n";
+                detales_parodytos++;
+                
+                if (detales_parodytos == max_detales) {
+                    std::cout << "\n[Tolimesnes transakcijos generuojamos be detalu...]\n";
+                }
+            }
+            
             pridetiTransakcija(std::move(tx));
             sekmingos++;
             
             if (sekmingos % 1000 == 0) {
-                std::cout << "Generated: " << sekmingos << " / " << kiekis << "\n";
+                std::cout << "\nPazanga: " << sekmingos << " / " << kiekis 
+                          << " (" << (sekmingos * 100 / kiekis) << "%)\n";
             }
         } catch (const std::exception& e) {
             continue;
         }
     }
     
-    std::cout << "\nSuccessfully generated " << sekmingos << " transactions!\n";
-    std::cout << "Attempts: " << bandymai << "\n\n";
+    std::cout << "\n========================================================\n";
+    std::cout << "           GENERAVIMO REZULTATAI                        \n";
+    std::cout << "========================================================\n";
+    std::cout << "Sekmingai sugeneruota: " << sekmingos << " transakciju\n";
+    std::cout << "Is viso bandymu: " << bandymai << "\n";
+    std::cout << "Sekmes procentas: " << std::fixed << std::setprecision(1) 
+              << (sekmingos * 100.0 / bandymai) << "%\n";
+    std::cout << "Bendra suma: " << std::fixed << std::setprecision(2) 
+              << bendras_suma << " vnt.\n";
+    std::cout << "========================================================\n\n";
 }
 
 bool TransakcijuBaseinas::vykdytiTransakcija(
     Transakcija& transakcija,
     std::vector<std::unique_ptr<Vartotojas>>& vartotojai) {
     
-    // Skip COINBASE transactions
+    // Praleisti COINBASE transakcijas
     if (transakcija.gautiSender() == "COINBASE") {
         Vartotojas* receiver = nullptr;
         for (auto& v : vartotojai) {
@@ -277,8 +312,11 @@ bool TransakcijuBaseinas::vykdytiTransakcija(
 int TransakcijuBaseinas::vykdytiVisasTransakcijas(
     std::vector<std::unique_ptr<Vartotojas>>& vartotojai) {
     
-    std::cout << "\nExecuting transactions...\n";
-    std::cout << "Please wait...\n\n";
+    std::cout << "\n========================================================\n";
+    std::cout << "         TRANSAKCIJU VYKDYMO PROCESAS                   \n";
+    std::cout << "========================================================\n";
+    std::cout << "Transakciju kiekis: " << transakcijos.size() << "\n";
+    std::cout << "========================================================\n\n";
     
     int sekmingos = 0;
     int nesekmingos = 0;
@@ -291,18 +329,24 @@ int TransakcijuBaseinas::vykdytiVisasTransakcijas(
         }
         
         if ((sekmingos + nesekmingos) % 1000 == 0) {
-            std::cout << "Processed: " << (sekmingos + nesekmingos) 
-                     << " / " << transakcijos.size() << "\n";
+            std::cout << "Apdorota: " << (sekmingos + nesekmingos) 
+                     << " / " << transakcijos.size() 
+                     << " (" << ((sekmingos + nesekmingos) * 100 / transakcijos.size()) << "%)\n";
         }
     }
     
-    std::cout << "\nSuccessfully executed: " << sekmingos << "\n";
-    std::cout << "Failed: " << nesekmingos << "\n\n";
+    std::cout << "\n========================================================\n";
+    std::cout << "              VYKDYMO REZULTATAI                        \n";
+    std::cout << "========================================================\n";
+    std::cout << "Sekmingai ivykdyta: " << sekmingos << "\n";
+    std::cout << "Nepavyko: " << nesekmingos << "\n";
+    std::cout << "Sekmes procentas: " << std::fixed << std::setprecision(1)
+              << (sekmingos * 100.0 / transakcijos.size()) << "%\n";
+    std::cout << "========================================================\n\n";
     
     return sekmingos;
 }
 
-// NAUJA FUNKCIJA: Pašalina transakcijas iš baseino pagal ID
 void TransakcijuBaseinas::pasalintiTransakcijas(const std::vector<std::shared_ptr<Transakcija>>& pasalinti) {
     std::set<std::string> pasalinti_ids;
     for (const auto& tx : pasalinti) {
@@ -319,35 +363,57 @@ void TransakcijuBaseinas::pasalintiTransakcijas(const std::vector<std::shared_pt
 }
 
 void TransakcijuBaseinas::spausdintiStatistika() const {
-    std::cout << "\n=== TRANSACTION STATISTICS ===\n";
-    std::cout << "Transaction count: " << transakcijos.size() << "\n";
-    std::cout << "Total amount: " << std::fixed << std::setprecision(2) 
-              << bendras_suma << " units\n";
+    std::cout << "\n========================================================\n";
+    std::cout << "           TRANSAKCIJU BASEINO STATISTIKA               \n";
+    std::cout << "========================================================\n";
+    std::cout << "Transakciju kiekis: " << std::setw(8) << transakcijos.size() << "\n";
+    std::cout << "Bendra suma:        " << std::setw(14) << std::fixed << std::setprecision(2) 
+              << bendras_suma << " vnt.\n";
     
     if (!transakcijos.empty()) {
         double vidutine = bendras_suma / transakcijos.size();
-        std::cout << "Average amount: " << std::fixed << std::setprecision(2) 
-                  << vidutine << " units\n";
+        std::cout << "Vidutine suma:      " << std::setw(14) << std::fixed << std::setprecision(2) 
+                  << vidutine << " vnt.\n";
+        
+        // Rasti min ir max sumas
+        double min_suma = transakcijos[0]->gautiAmount();
+        double max_suma = transakcijos[0]->gautiAmount();
+        
+        for (const auto& tx : transakcijos) {
+            double suma = tx->gautiAmount();
+            if (suma < min_suma) min_suma = suma;
+            if (suma > max_suma) max_suma = suma;
+        }
+        
+        std::cout << "Minimali suma:      " << std::setw(14) << std::fixed << std::setprecision(2)
+                  << min_suma << " vnt.\n";
+        std::cout << "Maksimali suma:     " << std::setw(14) << std::fixed << std::setprecision(2)
+                  << max_suma << " vnt.\n";
     }
-    std::cout << "\n";
+    std::cout << "========================================================\n\n";
 }
 
 void TransakcijuBaseinas::spausdintiTransakcijas(int kiek) const {
-    std::cout << "\n=== FIRST " << kiek << " TRANSACTIONS ===\n\n";
+    std::cout << "\n========================================================\n";
+    std::cout << "             PIRMOS " << kiek << " TRANSAKCIJOS                \n";
+    std::cout << "========================================================\n\n";
     
     int count = 0;
     for (const auto& tx : transakcijos) {
         if (count >= kiek) break;
         
-        std::cout << "--- Transaction #" << (count + 1) << " ---\n";
+        std::cout << "--- Transakcija #" << (count + 1) << " ---\n";
         tx->spausdintiInfo();
         std::cout << "\n";
         
         count++;
     }
+    
+    std::cout << "========================================================\n";
 }
 
 void TransakcijuBaseinas::isvalyti() {
     transakcijos.clear();
     bendras_suma = 0.0;
+    std::cout << "Transakciju baseinas isvalytas.\n";
 }

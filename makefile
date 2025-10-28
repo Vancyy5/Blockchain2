@@ -3,7 +3,7 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -O2
 
 # Objektiniai failai
-OBJS = main.o vartotojas.o transakcija.o blokas.o hashas.o laikas.o
+OBJS = main.o vartotojas.o transakcija.o blokas.o hashas.o 
 
 # Vykdomasis failas
 TARGET = blockchain
@@ -25,7 +25,7 @@ vartotojas.o: vartotojas.cpp vartotojas.h lib.h
 transakcija.o: transakcija.cpp transakcija.h vartotojas.h hashas.h lib.h 
 	$(CXX) $(CXXFLAGS) -c transakcija.cpp
 
-blokas.o: blokas.cpp blokas.h transakcija.h hashas.h lib.h
+blokas.o: blokas.cpp blokas.h transakcija.h hashas.h lib.h laikas.h
 	$(CXX) $(CXXFLAGS) -c blokas.cpp
 
 laikas.o: laikas.cpp laikas.h lib.h

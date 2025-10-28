@@ -79,7 +79,6 @@ bool Blokas::atliktiProofOfWork() {
               << antraste.difficulty_target << ")...\n";
     
     Laikas kasimo_laikas("Bloko kasimas");
-    kasimo_laikas.pradeti();
     
     for (uint64_t n = 0; n < MAX_NONCE; ++n) {
         antraste.nonce = n;
@@ -87,8 +86,6 @@ bool Blokas::atliktiProofOfWork() {
         
         if (arValidusHash(hash)) {
             bloko_hash = hash;
-            
-            kasimo_laikas.baigti();
             
             std::cout << "Blokas iskastas! Nonce: " << n << "\n";
             std::cout << "Hash: " << hash << "\n\n";
@@ -117,7 +114,7 @@ Blokas::Blokas(uint32_t numeris,
     antraste.difficulty_target = difficulty;
     antraste.nonce = 0;
     
-    // Add Coinbase transaction (block reward)
+    // Coinbase transakcija (bloko atmokejimas)
     double block_reward = 50.0;
     auto coinbase = std::make_shared<Transakcija>(
         "COINBASE",
@@ -128,7 +125,7 @@ Blokas::Blokas(uint32_t numeris,
     
     transakcijos.push_back(coinbase);
     
-    // Add regular transactions
+    // Paprastos transakcijos
     for (const auto& tx : txs) {
         transakcijos.push_back(tx);
     }

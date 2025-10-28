@@ -3,14 +3,26 @@
 #include "blokas.h"
 #include "lib.h"
 #include "laikas.h"
+
+#ifdef _WIN32
 #include <direct.h>
+#define MKDIR(path) _mkdir(path)
+#else
+#include <sys/stat.h>
+#define MKDIR(path) mkdir(path, 0755)
+#endif
 
 const std::vector<std::string> VARDAI = {
-    "Vanesa", "Jokūbas", "Gabija", "Vakarė", "Patricija",
+    "Vanesa", "Jokubas", "Gabija", "Vakare", "Patricija",
     "Margarita", "Tomas", "Mantas", "Lukas", "Matas",
     "Paulius", "Andrius", "Vytautas", "Rokas", "Laura",
-    "Marija", "Ona", "Rasa", "Eglė", "Indrė"
+    "Marija", "Ona", "Rasa", "Egle", "Indre"
 };
+
+// PATAISYTA: Funkcija perkelta i priekį
+void sukurtiAplankaJeiguNeegzistuoja(const std::string& path) {
+    MKDIR(path.c_str());
+}
 
 void issaugotiVartotojus(const std::vector<std::unique_ptr<Vartotojas>>& vartotojai, const std::string& failas) {
     std::ofstream out(failas);
@@ -79,17 +91,55 @@ void issaugotiBlockchain(const Blockchain& blockchain, const std::string& failas
     std::cout << "Blockchain issaugotas i " << failas << "\n";
 }
 
-void sukurtiAplankaJeiguNeegzistuoja(const std::string& path) {
-    _mkdir(path.c_str());
+// NAUJA: Issaugoti atskirai kiekviena bloka
+void issaugotiBlokaDetales(const Blokas* blokas, const std::string& aplankas) {
+    if (!blokas) return;
+    
+    std::stringstream filename;
+    filename << aplankas << "/blokas_" 
+             << std::setfill('0') << std::setw(4) << blokas->gautiBlokoNumeri() 
+             << ".csv";
+    
+    std::ofstream out(filename.str());
+    if (!out.is_open()) {
+        std::cout << "Klaida: Nepavyko sukurti failo " << filename.str() << "\n";
+        return;
+    }
+    
+    out << "TxID,Sender,Receiver,Amount,Timestamp\n";
+    
+    const auto& txs = blokas->gautiTransakcijas();
+    for (const auto& tx : txs) {
+        auto time_t = std::chrono::system_clock::to_time_t(tx->gautiTimestamp());
+        out << tx->gautiTransactionId() << ","
+            << tx->gautiSender() << ","
+            << tx->gautiReceiver() << ","
+            << std::fixed << std::setprecision(2) << tx->gautiAmount() << ","
+            << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S") << "\n";
+    }
+    
+    out.close();
 }
 
-// NAUJA FUNKCIJA: Sukuria vieną bloką
-bool sukurtiVienaBloką(Blockchain& blockchain, 
+void issaugotiVisusBlokus(const Blockchain& blockchain, const std::string& aplankas) {
+    sukurtiAplankaJeiguNeegzistuoja(aplankas);
+    
+    std::cout << "\nIssaugojami atskiri blokai...\n";
+    for (size_t i = 0; i < blockchain.gautiIlgi(); ++i) {
+        const Blokas* blokas = blockchain.gautiBlokaPagalIndeksa(i);
+        if (blokas) {
+            issaugotiBlokaDetales(blokas, aplankas);
+        }
+    }
+    std::cout << "Issaugota " << blockchain.gautiIlgi() << " bloku i '" << aplankas << "'\n";
+}
+
+bool sukurtiVienaBloka(Blockchain& blockchain, 
                        TransakcijuBaseinas& baseinas,
                        std::vector<std::unique_ptr<Vartotojas>>& vartotojai,
                        int tx_per_block = 100) {
     
-    if (baseinas.gautiKieki() < tx_per_block) {
+    if (baseinas.gautiKieki() < static_cast<size_t>(tx_per_block)) {
         std::cout << "\nNepakanka transakciju! (Reikia: " << tx_per_block 
                   << ", Yra: " << baseinas.gautiKieki() << ")\n";
         return false;
@@ -98,7 +148,6 @@ bool sukurtiVienaBloką(Blockchain& blockchain,
     std::cout << "\n=== KURIAMAS NAUJAS BLOKAS ===\n";
     
     Laikas timer("Bloko kasimas ir patvirtinimas");
-    timer.pradeti();
     
     // 1. Pasirinkti transakcijas
     const auto& visos_tx = baseinas.gautiTransakcijas();
@@ -107,7 +156,7 @@ bool sukurtiVienaBloką(Blockchain& blockchain,
     std::random_device rd;
     std::mt19937 gen(rd());
     std::vector<size_t> indeksai;
-    for (size_t i = 0; i < std::min(visos_tx.size(), (size_t)tx_per_block); ++i) {
+    for (size_t i = 0; i < std::min(visos_tx.size(), static_cast<size_t>(tx_per_block)); ++i) {
         indeksai.push_back(i);
     }
     
@@ -117,7 +166,7 @@ bool sukurtiVienaBloką(Blockchain& blockchain,
         );
     }
     
-    // 2. Parinkti kasėją
+    // 2. Parinkti kaseja
     std::uniform_int_distribution<> miner_dis(0, vartotojai.size() - 1);
     std::string miner_address = vartotojai[miner_dis(gen)]->gautiPublicKey();
     
@@ -126,7 +175,7 @@ bool sukurtiVienaBloką(Blockchain& blockchain,
     std::string prev_hash = paskutinis ? paskutinis->gautiBlokoHash() : 
         "0000000000000000000000000000000000000000000000000000000000000000";
     
-    // 4. Sukurti ir iškasti bloką
+    // 4. Sukurti ir iskasti bloka
     auto naujas_blokas = std::make_unique<Blokas>(
         blockchain.gautiIlgi(),
         prev_hash,
@@ -146,27 +195,24 @@ bool sukurtiVienaBloką(Blockchain& blockchain,
     }
     std::cout << "Sekmingai atnaujinta: " << sekmingos << " transakciju\n";
     
-    // 6. Pridėti bloką į grandinę
+    // 6. Prideti bloka i grandine
     naujas_blokas->spausdintiInfo();
     blockchain.pridetiBloka(std::move(naujas_blokas));
     
-    // 7. Pašalinti įtrauktas transakcijas iš baseino
+    // 7. Pasalinti itrauktas transakcijas is baseino
     std::cout << "Salinamos itrauktos transakcijos is baseino...\n";
     baseinas.pasalintiTransakcijas(pasirinktos);
     std::cout << "Liko transakciju baseine: " << baseinas.gautiKieki() << "\n";
     
-    timer.baigti();
-    
     return true;
 }
 
-// NAUJA FUNKCIJA: Kasa blokus kol neliks transakcijų
 void kastiVisusBlokus(Blockchain& blockchain, 
                       TransakcijuBaseinas& baseinas,
                       std::vector<std::unique_ptr<Vartotojas>>& vartotojai,
                       int tx_per_block = 100) {
     
-    if (baseinas.gautiKieki() < tx_per_block) {
+    if (baseinas.gautiKieki() < static_cast<size_t>(tx_per_block)) {
         std::cout << "\nNepakanka transakciju blokui!\n";
         return;
     }
@@ -179,22 +225,19 @@ void kastiVisusBlokus(Blockchain& blockchain,
     std::cout << "Numatoma sukurti ~" << numatytas_bloku_sk << " bloku\n\n";
     
     Laikas bendras_laikas("Visu bloku kasimas");
-    bendras_laikas.pradeti();
     
     int sukurta_bloku = 0;
     
-    while (baseinas.gautiKieki() >= tx_per_block) {
+    while (baseinas.gautiKieki() >= static_cast<size_t>(tx_per_block)) {
         sukurta_bloku++;
         std::cout << "\n========== BLOKAS #" << sukurta_bloku << " ==========\n";
         
-        if (!sukurtiVienaBloką(blockchain, baseinas, vartotojai, tx_per_block)) {
+        if (!sukurtiVienaBloka(blockchain, baseinas, vartotojai, tx_per_block)) {
             break;
         }
         
         std::cout << "\n";
     }
-    
-    bendras_laikas.baigti();
     
     std::cout << "\n=== KASIMO SUVESTINE ===\n";
     std::cout << "Sukurta bloku: " << sukurta_bloku << "\n";
@@ -235,7 +278,6 @@ int main() {
         switch (pasirinkimas) {
             case 1: {
                 Laikas timer("Vartotoju generavimas");
-                timer.pradeti();
                 
                 std::random_device rd;
                 std::mt19937 gen(rd());
@@ -243,20 +285,47 @@ int main() {
                 std::uniform_real_distribution<> balansas_dis(100.0, 1000000.0);
                 
                 vartotojai.clear();
-                std::cout << "\nGeneruojami 1000 vartotoju...\n";
+                
+                std::cout << "\n========================================================\n";
+                std::cout << "          VARTOTOJU GENERAVIMO PROCESAS                 \n";
+                std::cout << "========================================================\n";
+                std::cout << "Tikslas: Sugeneruoti 1000 vartotoju\n";
+                std::cout << "Balansu ruozas: 100.00 - 1,000,000.00 vnt.\n";
+                std::cout << "========================================================\n\n";
+                
+                double bendra_suma = 0.0;
                 
                 for (int i = 0; i < 1000; ++i) {
-                    std::string vardas = VARDAI[vardas_dis(gen)] + std::to_string(i + 1);
+                    std::string vardas = VARDAI[vardas_dis(gen)] + std::to_string(i);
                     double balansas = balansas_dis(gen);
-                    vartotojai.push_back(std::make_unique<Vartotojas>(vardas, balansas));
                     
-                    if ((i + 1) % 100 == 0) {
-                        std::cout << "Sugeneruota: " << (i + 1) << "/1000\n";
+                    auto vartotojas = std::make_unique<Vartotojas>(vardas, balansas);
+                    bendra_suma += balansas;
+                    
+                    if (i < 5) {
+                        std::cout << "Vartotojas #" << (i + 1) << ":\n";
+                        std::cout << "  Vardas: " << vardas << "\n";
+                        std::cout << "  Balansas: " << std::fixed << std::setprecision(2) 
+                                  << balansas << " vnt.\n";
+                        std::cout << "  Public Key: " << vartotojas->gautiPublicKey().substr(0, 20) << "...\n\n";
+                    }
+                    
+                    vartotojai.push_back(std::move(vartotojas));
+                    
+                    if ((i + 1) % 200 == 0) {
+                        std::cout << "Pazanga: " << (i + 1) << " / 1000 vartotoju\n";
                     }
                 }
                 
-                timer.baigti();
-                std::cout << "Sekmingai sugeneruoti 1000 vartotoju!\n";
+                std::cout << "\n========================================================\n";
+                std::cout << "              GENERAVIMO REZULTATAI                     \n";
+                std::cout << "========================================================\n";
+                std::cout << "Sugeneruota vartotoju: " << vartotojai.size() << "\n";
+                std::cout << "Bendra suma: " << std::fixed << std::setprecision(2) 
+                          << bendra_suma << " vnt.\n";
+                std::cout << "Vidutinis balansas: " << (bendra_suma / vartotojai.size()) << " vnt.\n";
+                std::cout << "========================================================\n\n";
+                
                 break;
             }
             case 2: {
@@ -266,12 +335,10 @@ int main() {
                 }
                 
                 Laikas timer("Transakciju generavimas");
-                timer.pradeti();
                 
                 baseinas.isvalyti();
                 baseinas.generuotiTransakcijas(vartotojai, 10000);
                 
-                timer.baigti();
                 baseinas.spausdintiStatistika();
                 break;
             }
@@ -285,7 +352,7 @@ int main() {
                     break;
                 }
                 
-                sukurtiVienaBloką(*blockchain, baseinas, vartotojai, 100);
+                sukurtiVienaBloka(*blockchain, baseinas, vartotojai, 100);
                 break;
             }
             case 4: {
@@ -323,7 +390,6 @@ int main() {
             }
             case 8: {
                 Laikas timer("Duomenu issaugojimas");
-                timer.pradeti();
                 
                 if (!vartotojai.empty()) {
                     issaugotiVartotojus(vartotojai, "output/vartotojai.csv");
@@ -333,10 +399,11 @@ int main() {
                 }
                 if (blockchain && blockchain->gautiIlgi() > 0) {
                     issaugotiBlockchain(*blockchain, "output/blockchain.csv");
+                    // NAUJA: Issaugoti atskirai kiekviena bloka
+                    issaugotiVisusBlokus(*blockchain, "output/blokai");
                 }
                 
-                timer.baigti();
-                std::cout << "\nIssaugota 'output' albume!\n";
+                std::cout << "\nVisi duomenys issaugoti 'output' aplanke!\n";
                 break;
             }
             case 0: {
