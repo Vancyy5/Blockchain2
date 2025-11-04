@@ -26,7 +26,7 @@ void sukurtiAplankaJeiguNeegzistuoja(const std::string& path) {
 }
 
 void issaugotiVartotojus(const std::vector<std::unique_ptr<Vartotojas>>& vartotojai, const std::string& failas) {
-std::ofstream out(failas, std::ios::out | std::ios::trunc);
+    std::ofstream out(failas, std::ios::out | std::ios::trunc);
     if (!out.is_open()) {
         std::cout << "Klaida: Nepavyko atidaryti failo " << failas << "\n";
         return;
@@ -39,6 +39,7 @@ std::ofstream out(failas, std::ios::out | std::ios::trunc);
             << std::fixed << std::setprecision(2) << v->gautiBalansa() << ","
             << v->gautiUTXO().size() << "\n";
     }
+    out.flush();
     out.close();
     std::cout << " Vartotojai issaugoti i " << failas << "\n";
 }
@@ -60,12 +61,13 @@ void issaugotiTransakcijas(const TransakcijuBaseinas& baseinas, const std::strin
             << std::fixed << std::setprecision(2) << tx->gautiAmount() << ","
             << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S") << "\n";
     }
+    out.flush();
     out.close();
     std::cout << " Transakcijos issaugotos i " << failas << "\n";
 }
 
 void issaugotiBlockchain(const Blockchain& blockchain, const std::string& failas) {
-   std::ofstream out(failas, std::ios::out | std::ios::trunc);
+    std::ofstream out(failas, std::ios::out | std::ios::trunc);
     if (!out.is_open()) {
         std::cout << "Klaida: Nepavyko atidaryti failo " << failas << "\n";
         return;
@@ -88,8 +90,9 @@ void issaugotiBlockchain(const Blockchain& blockchain, const std::string& failas
             << blokas->gautiTransakcijuKieki() << ","
             << std::fixed << std::setprecision(2) << blokas->gautiBendraTransakcijuSuma() << "\n";
     }
+    out.flush();
     out.close();
-    std::cout << "Blockchain issaugotas i " << failas << "\n";
+    std::cout << " Blockchain issaugotas i " << failas << "\n";
 }
 
 void issaugotiBlokaDetales(const Blokas* blokas, const std::string& aplankas) {
@@ -114,7 +117,7 @@ void issaugotiBlokaDetales(const Blokas* blokas, const std::string& aplankas) {
             << std::fixed << std::setprecision(2) << tx->gautiAmount() << ","
             << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S") << "\n";
     }
-    
+    out.flush();
     out.close();
 }
 
@@ -131,14 +134,13 @@ void issaugotiVisusBlokus(const Blockchain& blockchain, const std::string& aplan
     std::cout << " Issaugota " << blockchain.gautiIlgi() << " bloku i '" << aplankas << "'\n";
 }
 
-// Kandidatinio bloko kasimas su laiko ribojimu
 std::unique_ptr<Blokas> kastiKandidatiniBloka(
     uint32_t numeris,
     const std::string& prev_hash,
     const std::vector<std::shared_ptr<Transakcija>>& txs,
     const std::string& miner_address,
     uint32_t difficulty,
-     double max_laikas_s,
+    double max_laikas_s,
     bool& pavyko) {
     
     pavyko = false;
@@ -153,13 +155,14 @@ std::unique_ptr<Blokas> kastiKandidatiniBloka(
         return nullptr;
     }
 }
+
 bool sukurtiVienaBloka(Blockchain& blockchain, 
                        TransakcijuBaseinas& baseinas,
                        std::vector<std::unique_ptr<Vartotojas>>& vartotojai,
                        int tx_per_block = 100) {
     
     if (baseinas.gautiKieki() < static_cast<size_t>(tx_per_block)) {
-        std::cout << "\nNepakanka transakciju! (Reikia: " << tx_per_block 
+        std::cout << "\n Nepakanka transakciju! (Reikia: " << tx_per_block 
                   << ", Yra: " << baseinas.gautiKieki() << ")\n";
         return false;
     }
@@ -168,7 +171,6 @@ bool sukurtiVienaBloka(Blockchain& blockchain,
     
     Laikas timer("Bloko kasimas ir patvirtinimas");
     
-    // 1. Pasirinkti transakcijas
     const auto& visos_tx = baseinas.gautiTransakcijas();
     std::vector<std::shared_ptr<Transakcija>> pasirinktos;
     
@@ -185,16 +187,13 @@ bool sukurtiVienaBloka(Blockchain& blockchain,
         );
     }
     
-    // 2. Parinkti kaseja
     std::uniform_int_distribution<> miner_dis(0, vartotojai.size() - 1);
     std::string miner_address = vartotojai[miner_dis(gen)]->gautiPublicKey();
     
-    // 3. Gauti paskutinio bloko hash
     const Blokas* paskutinis = blockchain.gautiPaskutiniBloka();
     std::string prev_hash = paskutinis ? paskutinis->gautiBlokoHash() : 
         "0000000000000000000000000000000000000000000000000000000000000000";
     
-    // 4. Sukurti ir iskasti bloka
     auto naujas_blokas = std::make_unique<Blokas>(
         blockchain.gautiIlgi(),
         prev_hash,
@@ -203,7 +202,6 @@ bool sukurtiVienaBloka(Blockchain& blockchain,
         blockchain.gautiDifficulty()
     );
     
-    // 5. Vykdyti transakcijas (atnaujinti balansus)
     std::cout << "\nAtnaujinami vartotoju balansai...\n";
     const auto& bloko_tx = naujas_blokas->gautiTransakcijas();
     int sekmingos = 0;
@@ -214,18 +212,16 @@ bool sukurtiVienaBloka(Blockchain& blockchain,
     }
     std::cout << "Sekmingai atnaujinta: " << sekmingos << " transakciju\n";
     
-    // 6. Prideti bloka i grandine
     naujas_blokas->spausdintiInfo();
     blockchain.pridetiBloka(std::move(naujas_blokas));
     
-    // 7. Pasalinti itrauktas transakcijas is baseino
     std::cout << "Salinamos itrauktos transakcijos is baseino...\n";
     baseinas.pasalintiTransakcijas(pasirinktos);
     std::cout << "Liko transakciju baseine: " << baseinas.gautiKieki() << "\n";
     
     return true;
 }
-// Sukurti 5 kandidatinius blokus ir parinkti geriausią
+
 bool sukurtiBlokaSuKandidatais(
     Blockchain& blockchain,
     TransakcijuBaseinas& baseinas,
@@ -233,14 +229,14 @@ bool sukurtiBlokaSuKandidatais(
     int tx_per_block = 100) {
     
     if (baseinas.gautiKieki() < static_cast<size_t>(tx_per_block)) {
-        std::cout << "\nNepakanka transakciju! (Reikia: " << tx_per_block 
+        std::cout << "\n Nepakanka transakciju! (Reikia: " << tx_per_block 
                   << ", Yra: " << baseinas.gautiKieki() << ")\n";
         return false;
     }
     
     std::cout << "\n";
     std::cout << "========================================================\n";
-    std::cout << "        KANDIDATINIU BLOKU KASIMO PROCESAS              \n";
+    std::cout << "        KANDIDATINIU BLOKU KASIMO PROCESAS (v0.2)      \n";
     std::cout << "========================================================\n";
     std::cout << "Kandidatu skaicius: 5\n";
     std::cout << "Transakciju per bloka: " << tx_per_block << "\n";
@@ -249,7 +245,6 @@ bool sukurtiBlokaSuKandidatais(
     
     Laikas bendras_laikas("Visi 5 kandidatai");
     
-    // Paruošti duomenis
     const Blokas* paskutinis = blockchain.gautiPaskutiniBloka();
     std::string prev_hash = paskutinis ? paskutinis->gautiBlokoHash() : 
         "0000000000000000000000000000000000000000000000000000000000000000";
@@ -259,7 +254,6 @@ bool sukurtiBlokaSuKandidatais(
     std::random_device rd;
     std::mt19937 gen(rd());
     
-    // Pasirinkti transakcijas
     const auto& visos_tx = baseinas.gautiTransakcijas();
     std::vector<std::shared_ptr<Transakcija>> pasirinktos;
     
@@ -267,17 +261,16 @@ bool sukurtiBlokaSuKandidatais(
         pasirinktos.push_back(std::make_shared<Transakcija>(*visos_tx[i]));
     }
     
-    // Sukurti 5 kandidatus
     std::vector<KandidatinisBokas> kandidatai(5);
     
     for (int i = 0; i < 5; ++i) {
         std::cout << "\n--- KANDIDATAS #" << (i + 1) << " ---\n";
         
-        // Parinkti atsitiktinį kasėją
         std::uniform_int_distribution<> miner_dis(0, vartotojai.size() - 1);
-        std::string miner_address = vartotojai[miner_dis(gen)]->gautiPublicKey();
+        int miner_idx = miner_dis(gen);
+        std::string miner_address = vartotojai[miner_idx]->gautiPublicKey();
         
-        std::cout << "Kasejas: " << vartotojai[miner_dis(gen)]->gautiVarda() << "\n";
+        std::cout << "Kasejas: " << vartotojai[miner_idx]->gautiVarda() << "\n";
         
         Laikas kasimo_laikas("Kandidato #" + std::to_string(i + 1) + " kasimas");
         
@@ -288,7 +281,7 @@ bool sukurtiBlokaSuKandidatais(
             pasirinktos,
             miner_address,
             blockchain.gautiDifficulty(),
-            5.0,  // 5 sekundės
+            5.0,
             pavyko
         );
         
@@ -303,7 +296,6 @@ bool sukurtiBlokaSuKandidatais(
         }
     }
     
-    // Pasirinkti geriausią kandidatą (mažiausias nonce)
     std::cout << "\n========================================================\n";
     std::cout << "              KANDIDATU PALYGINIMAS                     \n";
     std::cout << "========================================================\n";
@@ -332,10 +324,9 @@ bool sukurtiBlokaSuKandidatais(
         return false;
     }
     
-    std::cout << "\n→ Pasirinktas kandidatas #" << (geriausias_idx + 1) << "\n";
+    std::cout << "\n Pasirinktas kandidatas #" << (geriausias_idx + 1) << "\n";
     std::cout << "========================================================\n\n";
     
-    // Pridėti geriausią bloką
     auto& geriausias = kandidatai[geriausias_idx].blokas;
     
     std::cout << "Atnaujinami vartotoju balansai...\n";
@@ -358,22 +349,19 @@ bool sukurtiBlokaSuKandidatais(
     return true;
 }
 
-void kastiVisusBlokus(
-    Blockchain& blockchain,
-    TransakcijuBaseinas& baseinas,
-    std::vector<std::unique_ptr<Vartotojas>>& vartotojai,
-    int tx_per_block = 100,
-    bool naudoti_kandidatus = true) {
+void kastiVisusBlokus(Blockchain& blockchain, 
+                      TransakcijuBaseinas& baseinas,
+                      std::vector<std::unique_ptr<Vartotojas>>& vartotojai,
+                      int tx_per_block = 100) {
     
     if (baseinas.gautiKieki() < static_cast<size_t>(tx_per_block)) {
-        std::cout << "\nNepakanka transakciju blokui!\n";
+        std::cout << "\n Nepakanka transakciju blokui!\n";
         return;
     }
     
     std::cout << "\n=== PRADEDAMAS AUTOMATINIS BLOKU KASIMAS ===\n";
     std::cout << "Transakciju baseine: " << baseinas.gautiKieki() << "\n";
     std::cout << "Transakciju per bloka: " << tx_per_block << "\n";
-    std::cout << "Naudoti kandidatus: " << (naudoti_kandidatus ? "TAIP" : "NE") << "\n";
     
     int numatytas_bloku_sk = baseinas.gautiKieki() / tx_per_block;
     std::cout << "Numatoma sukurti ~" << numatytas_bloku_sk << " bloku\n\n";
@@ -386,15 +374,7 @@ void kastiVisusBlokus(
         sukurta_bloku++;
         std::cout << "\n========== BLOKAS #" << sukurta_bloku << " ==========\n";
         
-        bool pavyko;
-        if (naudoti_kandidatus) {
-            pavyko = sukurtiBlokaSuKandidatais(blockchain, baseinas, vartotojai, tx_per_block);
-        } else {
-            // Paprastas kasimas be kandidatų
-            pavyko = false; // Reikėtų implementuoti paprastą funkciją
-        }
-        
-        if (!pavyko) {
+        if (!sukurtiVienaBloka(blockchain, baseinas, vartotojai, tx_per_block)) {
             break;
         }
         
@@ -487,7 +467,7 @@ void paieskosSubmeniu(
             case 0:
                 return;
             default:
-                std::cout << "\nNetinkama ivestis!\n";
+                std::cout << "\n Netinkama ivestis!\n";
         }
     }
 }
@@ -502,20 +482,20 @@ int main() {
     int pasirinkimas;
     
     while (true) {
-        std::cout << "\n";
         std::cout << "\n[ PARUOSIMAS ]\n";
         std::cout << "  1. Generuoti 1000 vartotoju\n";
         std::cout << "  2. Generuoti 10000 transakciju\n";
         std::cout << "\n[ KASIMAS ]\n";
-        std::cout << "  3. Sukurti nauja bloka (1 blokas)\n";
-        std::cout << "  4. Kasti blokus kol neliks transakciju (AUTOMATINIS)\n";
+        std::cout << "  3. Sukurti nauja bloka (paprastas kasimas)\n";
+        std::cout << "  4. Sukurti bloka su 5 kandidatais\n";
+        std::cout << "  5. Kasti blokus kol neliks transakciju (AUTOMATINIS)\n";
         std::cout << "\n[ PERZIURA ]\n";
-        std::cout << "  5. Spausdinti blockchain\n";
-        std::cout << "  6. Spausdinti blockchain statistika\n";
-        std::cout << "  7. Spausdinti transakciju baseino statistika\n";
-        std::cout << "  8. Paieska (blokai/transakcijos)\n";
+        std::cout << "  6. Spausdinti blockchain i terminala\n";
+        std::cout << "  7. Spausdinti blockchain statistika\n";
+        std::cout << "  8. Spausdinti transakciju baseino statistika\n";
+        std::cout << "  9. Paieska (blokai/transakcijos)\n";
         std::cout << "\n[ EKSPORTAVIMAS ]\n";
-        std::cout << "  9. Issaugoti duomenis i failus\n";
+        std::cout << "  10. Issaugoti duomenis i failus\n";
         std::cout << "\n  0. Iseiti\n";
         std::cout << "\nPasirinkimas: ";
         
@@ -601,7 +581,7 @@ int main() {
                 }
                 
                 if (vartotojai.empty()) {
-                    std::cout << "\nKlaida: Pirmiausia sugeneruokite vartotojus!\n";
+                    std::cout << "\n Klaida: Pirmiausia sugeneruokite vartotojus!\n";
                     break;
                 }
                 
@@ -614,19 +594,24 @@ int main() {
                 }
                 
                 if (vartotojai.empty()) {
-                    std::cout << "\nKlaida: Pirmiausia sugeneruokite vartotojus!\n";
+                    std::cout << "\n Klaida: Pirmiausia sugeneruokite vartotojus!\n";
+                    break;
+                }
+                
+                sukurtiBlokaSuKandidatais(*blockchain, baseinas, vartotojai, 100);
+                break;
+            }
+            case 5: {
+                if (!blockchain) {
+                    blockchain = std::make_unique<Blockchain>(3);
+                }
+                
+                if (vartotojai.empty()) {
+                    std::cout << "\n Klaida: Pirmiausia sugeneruokite vartotojus!\n";
                     break;
                 }
                 
                 kastiVisusBlokus(*blockchain, baseinas, vartotojai, 100);
-                break;
-            }
-            case 5: {
-                if (!blockchain || blockchain->gautiIlgi() == 0) {
-                    std::cout << "\n Blockchain tuscias!\n";
-                    break;
-                }
-                blockchain->spausdintiGrandine();
                 break;
             }
             case 6: {
@@ -634,14 +619,22 @@ int main() {
                     std::cout << "\n Blockchain tuscias!\n";
                     break;
                 }
-                blockchain->spausdintiStatistika();
+                blockchain->spausdintiGrandine();
                 break;
             }
             case 7: {
-                baseinas.spausdintiStatistika();
+                if (!blockchain || blockchain->gautiIlgi() == 0) {
+                    std::cout << "\n Blockchain tuscias!\n";
+                    break;
+                }
+                blockchain->spausdintiStatistika();
                 break;
             }
             case 8: {
+                baseinas.spausdintiStatistika();
+                break;
+            }
+            case 9: {
                 if (!blockchain || blockchain->gautiIlgi() == 0) {
                     std::cout << "\n Blockchain tuscias!\n";
                     break;
@@ -649,22 +642,26 @@ int main() {
                 paieskosSubmeniu(*blockchain, baseinas);
                 break;
             }
-            case 9: {
+            case 10: {
                 Laikas timer("Duomenu issaugojimas");
                 
-                if (!vartotojai.empty()) {
-                    issaugotiVartotojus(vartotojai, "output/vartotojai.csv");
-                }
-                if (baseinas.gautiKieki() > 0) {
-                    issaugotiTransakcijas(baseinas, "output/transakcijos.csv");
-                }
-                if (blockchain && blockchain->gautiIlgi() > 0) {
-                    issaugotiBlockchain(*blockchain, "output/blockchain.csv");
-                    issaugotiVisusBlokus(*blockchain, "output/blokai");
-                }
                 
-                std::cout << "\n Visi duomenys issaugoti 'output' aplanke!\n";
-                break;
+               sukurtiAplankaJeiguNeegzistuoja("output");
+               sukurtiAplankaJeiguNeegzistuoja("output/blokai");
+
+                if (!vartotojai.empty()) {
+                 issaugotiVartotojus(vartotojai, "output/vartotojai.csv");
+                  }
+              if (baseinas.gautiKieki() > 0) {
+                    issaugotiTransakcijas(baseinas, "output/transakcijos.csv");
+              }
+            if (blockchain && blockchain->gautiIlgi() > 0) {
+              issaugotiBlockchain(*blockchain, "output/blockchain.csv");
+           issaugotiVisusBlokus(*blockchain, "output/blokai");
+             }
+
+    std::cout << "\n Visi duomenys issaugoti 'output' aplanke!\n";
+    break;
             }
             case 0: {
                 std::cout << "\nViso gero!\n";

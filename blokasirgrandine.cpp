@@ -130,7 +130,7 @@ bool Blokas::atliktiProofOfWork(uint64_t max_nonce) {
         }
     }
     
-    std::cout << "✗ Nepavyko rasti tinkamo hash po " << max_nonce << " bandymu\n";
+    std::cout << " Nepavyko rasti tinkamo hash po " << max_nonce << " bandymu\n";
     return false;
 }
 
