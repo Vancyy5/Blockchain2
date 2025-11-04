@@ -43,8 +43,12 @@ public:
     double gautiAmount() const { return amount; }
     std::chrono::system_clock::time_point gautiTimestamp() const { return timestamp; }
     
+    // Transakcijos validacija su detalesniu tikrinimu
     bool arValid() const;
+    bool arValidusHash() const;
+    
     void spausdintiInfo() const;
+    void spausdintiDetaliInfo() const;
     
     bool operator<(const Transakcija& kita) const {
         return timestamp < kita.timestamp;
@@ -65,11 +69,12 @@ public:
     void pridetiTransakcija(std::unique_ptr<Transakcija> transakcija);
     void generuotiTransakcijas(std::vector<std::unique_ptr<Vartotojas>>& vartotojai, int kiekis);
     
+    // Patobulinta transakcijos vykdymo funkcija su balanso tikrinimu
     bool vykdytiTransakcija(Transakcija& transakcija,
-                            std::vector<std::unique_ptr<Vartotojas>>& vartotojai);
+                            std::vector<std::unique_ptr<Vartotojas>>& vartotojai,
+                            bool verbose = false);
     int vykdytiVisasTransakcijas(std::vector<std::unique_ptr<Vartotojas>>& vartotojai);
     
-    // NAUJA: Funkcija pašalinti transakcijas po bloko patvirtinimo
     void pasalintiTransakcijas(const std::vector<std::shared_ptr<Transakcija>>& pasalinti);
     
     size_t gautiKieki() const { return transakcijos.size(); }
@@ -77,6 +82,9 @@ public:
     const std::vector<std::unique_ptr<Transakcija>>& gautiTransakcijas() const { 
         return transakcijos; 
     }
+    
+    // Transakcijos paieska
+    const Transakcija* rastiTransakcija(const std::string& tx_id) const;
     
     void spausdintiStatistika() const;
     void spausdintiTransakcijas(int kiek = 10) const;
