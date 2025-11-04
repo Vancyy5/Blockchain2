@@ -11,38 +11,69 @@ BlokoAntraste::BlokoAntraste()
       difficulty_target(3) {
 }
 
+// Rekursyvi Merkle Tree spausdinimo funkcija
+void spausdintiMerkleNode(const std::shared_ptr<MerkleNode>& node, int lygis = 0) {
+    if (!node) return;
+    
+    for (int i = 0; i < lygis; ++i) std::cout << "  ";
+    std::cout << "|- " << node->hash.substr(0, 16) << "...\n";
+    
+    if (node->kairys) spausdintiMerkleNode(node->kairys, lygis + 1);
+    if (node->desine) spausdintiMerkleNode(node->desine, lygis + 1);
+}
+
+std::shared_ptr<MerkleNode> Blokas::sukurtiMerkleTree(const std::vector<std::string>& hashes) const {
+    if (hashes.empty()) {
+        return std::make_shared<MerkleNode>("0000000000000000000000000000000000000000000000000000000000000000");
+    }
+    
+    std::vector<std::shared_ptr<MerkleNode>> lygis;
+    
+    // Sukuriame lapus
+    for (const auto& hash : hashes) {
+        lygis.push_back(std::make_shared<MerkleNode>(hash));
+    }
+    
+    // Statome medį iš apačios į viršų
+    while (lygis.size() > 1) {
+        std::vector<std::shared_ptr<MerkleNode>> naujas_lygis;
+        
+        for (size_t i = 0; i < lygis.size(); i += 2) {
+            std::string kombinuotas;
+            
+            auto kairys = lygis[i];
+            auto desine = (i + 1 < lygis.size()) ? lygis[i + 1] : lygis[i];
+            
+            kombinuotas = kairys->hash + desine->hash;
+            
+            std::string naujas_hash;
+            hashas(kombinuotas, naujas_hash);
+            
+            auto tevinis = std::make_shared<MerkleNode>(naujas_hash);
+            tevinis->kairys = kairys;
+            tevinis->desine = desine;
+            
+            naujas_lygis.push_back(tevinis);
+        }
+        
+        lygis = std::move(naujas_lygis);
+    }
+    
+    return lygis[0];
+}
+
 std::string Blokas::skaiciuotiMerkleRoot() const {
     if (transakcijos.empty()) {
         return "0000000000000000000000000000000000000000000000000000000000000000";
     }
     
     std::vector<std::string> hashes;
-    
     for (const auto& tx : transakcijos) {
         hashes.push_back(tx->gautiTransactionId());
     }
     
-    while (hashes.size() > 1) {
-        std::vector<std::string> naujasLygis;
-        
-        for (size_t i = 0; i < hashes.size(); i += 2) {
-            std::string kombinuotas;
-            
-            if (i + 1 < hashes.size()) {
-                kombinuotas = hashes[i] + hashes[i + 1];
-            } else {
-                kombinuotas = hashes[i] + hashes[i];
-            }
-            
-            std::string naujas_hash;
-            hashas(kombinuotas, naujas_hash);
-            naujasLygis.push_back(naujas_hash);
-        }
-        
-        hashes = std::move(naujasLygis);
-    }
-    
-    return hashes[0];
+    auto root = sukurtiMerkleTree(hashes);
+    return root->hash;
 }
 
 std::string Blokas::skaiciuotiBlokoHash() const {
@@ -72,32 +103,34 @@ bool Blokas::arValidusHash(const std::string& hash) const {
     return true;
 }
 
-bool Blokas::atliktiProofOfWork() {
-    const uint64_t MAX_NONCE = 10000000;
-    
+bool Blokas::atliktiProofOfWork(uint64_t max_nonce) {
     std::cout << "Pradedamas kasimo procesas (Sunkumas: " 
-              << antraste.difficulty_target << ")...\n";
+              << antraste.difficulty_target << ", Max Nonce: " << max_nonce << ")...\n";
     
-    Laikas kasimo_laikas("Bloko kasimas");
+    auto start = std::chrono::high_resolution_clock::now();
     
-    for (uint64_t n = 0; n < MAX_NONCE; ++n) {
+    for (uint64_t n = 0; n < max_nonce; ++n) {
         antraste.nonce = n;
         std::string hash = skaiciuotiBlokoHash();
         
         if (arValidusHash(hash)) {
             bloko_hash = hash;
             
-            std::cout << "Blokas iskastas! Nonce: " << n << "\n";
+            auto end = std::chrono::high_resolution_clock::now();
+            double trukme = std::chrono::duration<double>(end - start).count();
+            
+            std::cout << "✓ Blokas iskastas! Nonce: " << n << " (per " << std::fixed 
+                      << std::setprecision(3) << trukme << " s)\n";
             std::cout << "Hash: " << hash << "\n\n";
             return true;
         }
         
-        if (n % 50000 == 0 && n > 0) {
-            std::cout << "Bandymu: " << n << "...\n";
+        if (n % 100000 == 0 && n > 0) {
+            std::cout << "  Bandymu: " << n << "...\n";
         }
     }
     
-    std::cout << "Nepavyko rasti tinkamo hash po " << MAX_NONCE << " bandymu\n";
+    std::cout << "✗ Nepavyko rasti tinkamo hash po " << max_nonce << " bandymu\n";
     return false;
 }
 
@@ -114,7 +147,7 @@ Blokas::Blokas(uint32_t numeris,
     antraste.difficulty_target = difficulty;
     antraste.nonce = 0;
     
-    // Coinbase transakcija (bloko atmokejimas)
+    // Coinbase transakcija
     double block_reward = 50.0;
     auto coinbase = std::make_shared<Transakcija>(
         "COINBASE",
@@ -125,12 +158,18 @@ Blokas::Blokas(uint32_t numeris,
     
     transakcijos.push_back(coinbase);
     
-    // Paprastos transakcijos
+    // Pridėti paprastas transakcijas
     for (const auto& tx : txs) {
         transakcijos.push_back(tx);
     }
     
-    antraste.merkle_root = skaiciuotiMerkleRoot();
+    // Sukurti Merkle Tree
+    std::vector<std::string> tx_hashes;
+    for (const auto& tx : transakcijos) {
+        tx_hashes.push_back(tx->gautiTransactionId());
+    }
+    merkle_tree = sukurtiMerkleTree(tx_hashes);
+    antraste.merkle_root = merkle_tree->hash;
     
     if (!atliktiProofOfWork()) {
         throw std::runtime_error("Nepavyko sukurti bloko - kasimas nepavyko");
@@ -145,6 +184,13 @@ Blokas::Blokas(const Blokas& kitas)
       transakcijos(kitas.transakcijos),
       bloko_hash(kitas.bloko_hash),
       bloko_numeris(kitas.bloko_numeris) {
+    
+    // Perskaičiuojame Merkle Tree
+    std::vector<std::string> tx_hashes;
+    for (const auto& tx : transakcijos) {
+        tx_hashes.push_back(tx->gautiTransactionId());
+    }
+    merkle_tree = sukurtiMerkleTree(tx_hashes);
 }
 
 Blokas& Blokas::operator=(const Blokas& kitas) {
@@ -153,6 +199,12 @@ Blokas& Blokas::operator=(const Blokas& kitas) {
         transakcijos = kitas.transakcijos;
         bloko_hash = kitas.bloko_hash;
         bloko_numeris = kitas.bloko_numeris;
+        
+        std::vector<std::string> tx_hashes;
+        for (const auto& tx : transakcijos) {
+            tx_hashes.push_back(tx->gautiTransactionId());
+        }
+        merkle_tree = sukurtiMerkleTree(tx_hashes);
     }
     return *this;
 }
@@ -161,7 +213,8 @@ Blokas::Blokas(Blokas&& kitas) noexcept
     : antraste(std::move(kitas.antraste)),
       transakcijos(std::move(kitas.transakcijos)),
       bloko_hash(std::move(kitas.bloko_hash)),
-      bloko_numeris(kitas.bloko_numeris) {
+      bloko_numeris(kitas.bloko_numeris),
+      merkle_tree(std::move(kitas.merkle_tree)) {
 }
 
 Blokas& Blokas::operator=(Blokas&& kitas) noexcept {
@@ -170,21 +223,38 @@ Blokas& Blokas::operator=(Blokas&& kitas) noexcept {
         transakcijos = std::move(kitas.transakcijos);
         bloko_hash = std::move(kitas.bloko_hash);
         bloko_numeris = kitas.bloko_numeris;
+        merkle_tree = std::move(kitas.merkle_tree);
     }
     return *this;
 }
 
 bool Blokas::arValid() const {
-    if (!arValidusHash(bloko_hash)) return false;
+    // 1. Tikrinti hash formato teisingumą
+    if (!arValidusHash(bloko_hash)) {
+        std::cout << "Klaida: Netinkamas hash formatas\n";
+        return false;
+    }
     
+    // 2. Perskaičiuoti ir palyginti hash
     std::string perskaiciuotas = skaiciuotiBlokoHash();
-    if (perskaiciuotas != bloko_hash) return false;
+    if (perskaiciuotas != bloko_hash) {
+        std::cout << "Klaida: Hash neatitinka perskaiciuoto\n";
+        return false;
+    }
     
+    // 3. Patikrinti Merkle Root
     std::string perskaiciuotas_merkle = skaiciuotiMerkleRoot();
-    if (perskaiciuotas_merkle != antraste.merkle_root) return false;
+    if (perskaiciuotas_merkle != antraste.merkle_root) {
+        std::cout << "Klaida: Merkle Root neatitinka\n";
+        return false;
+    }
     
+    // 4. Patikrinti kiekviena transakcija
     for (const auto& tx : transakcijos) {
-        if (!tx->arValid()) return false;
+        if (!tx->arValid()) {
+            std::cout << "Klaida: Netinkama transakcija: " << tx->gautiTransactionId() << "\n";
+            return false;
+        }
     }
     
     return true;
@@ -196,6 +266,15 @@ double Blokas::gautiBendraTransakcijuSuma() const {
         suma += tx->gautiAmount();
     }
     return suma;
+}
+
+const Transakcija* Blokas::rastiTransakcija(const std::string& tx_id) const {
+    for (const auto& tx : transakcijos) {
+        if (tx->gautiTransactionId() == tx_id) {
+            return tx.get();
+        }
+    }
+    return nullptr;
 }
 
 void Blokas::spausdintiInfo() const {
@@ -218,6 +297,7 @@ void Blokas::spausdintiInfo() const {
     std::cout << "Transakciju:  " << std::setw(4) << transakcijos.size() << "\n";
     std::cout << "Bendra suma:  " << std::fixed << std::setprecision(2) 
               << std::setw(12) << gautiBendraTransakcijuSuma() << " vnt.\n";
+    std::cout << "Validus:      " << (arValid() ? "TAIP" : "NE") << "\n";
     
     std::cout << "======================================================\n";
 }
@@ -230,6 +310,12 @@ void Blokas::spausdintiVisasTransakcijas() const {
         transakcijos[i]->spausdintiInfo();
         std::cout << "\n";
     }
+}
+
+void Blokas::spausdintiMerkleTree() const {
+    std::cout << "\n=== MERKLE TREE (Blokas #" << bloko_numeris << ") ===\n\n";
+    spausdintiMerkleNode(merkle_tree);
+    std::cout << "\n";
 }
 
 void Blockchain::sukurtiGenesisBloka() {
@@ -256,23 +342,26 @@ Blockchain::~Blockchain() {
 }
 
 bool Blockchain::pridetiBloka(std::unique_ptr<Blokas> blokas) {
-    if (!blokas) return false;
+    if (!blokas) {
+        std::cout << "Klaida: Blokas yra nullptr\n";
+        return false;
+    }
     
     if (!blokas->arValid()) {
-        std::cout << "Netinkamas blokas!\n";
+        std::cout << "Klaida: Blokas nera validus!\n";
         return false;
     }
     
     if (!grandine.empty()) {
         const auto& paskutinis = grandine.back();
         if (blokas->gautiPrevHash() != paskutinis->gautiBlokoHash()) {
-            std::cout << "Bloko prev_hash neatitinka paskutinio bloko!\n";
+            std::cout << "Klaida: Bloko prev_hash neatitinka paskutinio bloko hash!\n";
             return false;
         }
     }
     
     grandine.push_back(std::move(blokas));
-    std::cout << "Blokas sekmingai pridetas i grandine!\n";
+    std::cout << "✓ Blokas sekmingai pridetas i grandine!\n";
     return true;
 }
 
@@ -298,6 +387,34 @@ bool Blockchain::arGrandineValidi() const {
 const Blokas* Blockchain::gautiPaskutiniBloka() const {
     if (grandine.empty()) return nullptr;
     return grandine.back().get();
+}
+
+const Blokas* Blockchain::gautiBlokaPagalNumeri(uint32_t numeris) const {
+    for (const auto& blokas : grandine) {
+        if (blokas->gautiBlokoNumeri() == numeris) {
+            return blokas.get();
+        }
+    }
+    return nullptr;
+}
+
+const Blokas* Blockchain::gautiBlokaPagalHash(const std::string& hash) const {
+    for (const auto& blokas : grandine) {
+        if (blokas->gautiBlokoHash() == hash) {
+            return blokas.get();
+        }
+    }
+    return nullptr;
+}
+
+std::pair<const Blokas*, const Transakcija*> Blockchain::rastiTransakcija(const std::string& tx_id) const {
+    for (const auto& blokas : grandine) {
+        const Transakcija* tx = blokas->rastiTransakcija(tx_id);
+        if (tx) {
+            return {blokas.get(), tx};
+        }
+    }
+    return {nullptr, nullptr};
 }
 
 void Blockchain::spausdintiGrandine() const {
@@ -335,4 +452,18 @@ void Blockchain::spausdintiStatistika() const {
     std::cout << "Grandine validi:     " << (arGrandineValidi() ? "TAIP" : "NE  ") << "\n";
     
     std::cout << "======================================================\n";
+}
+
+void Blockchain::spausdintiBlokoDetales(uint32_t bloko_numeris) const {
+    const Blokas* blokas = gautiBlokaPagalNumeri(bloko_numeris);
+    
+    if (!blokas) {
+        std::cout << "\nKlaida: Blokas #" << bloko_numeris << " nerastas!\n";
+        return;
+    }
+    
+    blokas->spausdintiInfo();
+    std::cout << "\n";
+    blokas->spausdintiMerkleTree();
+    blokas->spausdintiVisasTransakcijas();
 }

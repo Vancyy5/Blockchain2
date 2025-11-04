@@ -15,16 +15,29 @@ struct BlokoAntraste {
     BlokoAntraste();
 };
 
+// Merkle Tree mazgo struktura
+struct MerkleNode {
+    std::string hash;
+    std::shared_ptr<MerkleNode> kairys;
+    std::shared_ptr<MerkleNode> desine;
+    
+    MerkleNode(const std::string& h) : hash(h), kairys(nullptr), desine(nullptr) {}
+};
+
 class Blokas {
 private:
     BlokoAntraste antraste;
     std::vector<std::shared_ptr<Transakcija>> transakcijos;
     std::string bloko_hash;
     uint32_t bloko_numeris;
+    std::shared_ptr<MerkleNode> merkle_tree;
     
+    // Merkle Tree funkcijos
+    std::shared_ptr<MerkleNode> sukurtiMerkleTree(const std::vector<std::string>& hashes) const;
     std::string skaiciuotiMerkleRoot() const;
+    
     std::string skaiciuotiBlokoHash() const;
-    bool atliktiProofOfWork();
+    bool atliktiProofOfWork(uint64_t max_nonce = 10000000);
     bool arValidusHash(const std::string& hash) const;
 
 public:
@@ -55,7 +68,20 @@ public:
     bool arValid() const;
     void spausdintiInfo() const;
     void spausdintiVisasTransakcijas() const;
+    void spausdintiMerkleTree() const;
     double gautiBendraTransakcijuSuma() const;
+    
+    // Transakcijos paieska
+    const Transakcija* rastiTransakcija(const std::string& tx_id) const;
+};
+
+// Kandidatinio bloko struktura
+struct KandidatinisBokas {
+    std::unique_ptr<Blokas> blokas;
+    bool iskastas;
+    double kasimo_laikas;
+    
+    KandidatinisBokas() : blokas(nullptr), iskastas(false), kasimo_laikas(0.0) {}
 };
 
 class Blockchain {
@@ -78,10 +104,16 @@ public:
         if (index < grandine.size()) return grandine[index].get();
         return nullptr;
     }
+    const Blokas* gautiBlokaPagalNumeri(uint32_t numeris) const;
+    const Blokas* gautiBlokaPagalHash(const std::string& hash) const;
     uint32_t gautiDifficulty() const { return difficulty_target; }
+    
+    // Transakcijos paieska
+    std::pair<const Blokas*, const Transakcija*> rastiTransakcija(const std::string& tx_id) const;
     
     void spausdintiGrandine() const;
     void spausdintiStatistika() const;
+    void spausdintiBlokoDetales(uint32_t bloko_numeris) const;
 };
 
 #endif
