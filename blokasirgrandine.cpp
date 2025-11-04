@@ -119,7 +119,7 @@ bool Blokas::atliktiProofOfWork(uint64_t max_nonce) {
             auto end = std::chrono::high_resolution_clock::now();
             double trukme = std::chrono::duration<double>(end - start).count();
             
-            std::cout << "✓ Blokas iskastas! Nonce: " << n << " (per " << std::fixed 
+            std::cout << " Blokas iskastas! Nonce: " << n << " (per " << std::fixed 
                       << std::setprecision(3) << trukme << " s)\n";
             std::cout << "Hash: " << hash << "\n\n";
             return true;
@@ -361,7 +361,7 @@ bool Blockchain::pridetiBloka(std::unique_ptr<Blokas> blokas) {
     }
     
     grandine.push_back(std::move(blokas));
-    std::cout << "✓ Blokas sekmingai pridetas i grandine!\n";
+    std::cout << " Blokas sekmingai pridetas i grandine!\n";
     return true;
 }
 

@@ -329,7 +329,7 @@ bool TransakcijuBaseinas::vykdytiTransakcija(
         if (receiver) {
             receiver->pridetiUTXO(UTXO(transakcija.gautiTransactionId(), 0, transakcija.gautiAmount()));
             if (verbose) {
-                std::cout << "  ✓ Coinbase transakcija: " << transakcija.gautiAmount() << " vnt.\n";
+                std::cout << "  Coinbase transakcija: " << transakcija.gautiAmount() << " vnt.\n";
             }
             return true;
         }
@@ -350,7 +350,7 @@ bool TransakcijuBaseinas::vykdytiTransakcija(
     }
     
     if (!sender || !receiver) {
-        if (verbose) std::cout << "  ✗ Siuntejas arba gavejas nerastas\n";
+        if (verbose) std::cout << "   Siuntejas arba gavejas nerastas\n";
         return false;
     }
     
@@ -360,7 +360,7 @@ bool TransakcijuBaseinas::vykdytiTransakcija(
     // KRITINIS BALANSO TIKRINIMAS
     if (sender_balansas < amount) {
         if (verbose) {
-            std::cout << "  ✗ Nepakankamas balansas: " << sender_balansas 
+            std::cout << "   Nepakankamas balansas: " << sender_balansas 
                       << " < " << amount << "\n";
         }
         return false;
@@ -376,7 +376,7 @@ bool TransakcijuBaseinas::vykdytiTransakcija(
     }
     
     if (surinkta_suma < amount) {
-        if (verbose) std::cout << "  ✗ Nepakanka UTXO\n";
+        if (verbose) std::cout << "   Nepakanka UTXO\n";
         return false;
     }
     
@@ -394,7 +394,7 @@ bool TransakcijuBaseinas::vykdytiTransakcija(
     }
     
     if (verbose) {
-        std::cout << "  ✓ Transakcija: " << amount << " vnt. (Graza: " 
+        std::cout << "   Transakcija: " << amount << " vnt. (Graza: " 
                   << graza << ")\n";
     }
     
