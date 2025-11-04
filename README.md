@@ -103,6 +103,8 @@ make && make run
 
 ![Meniu](<nuotraukos/Screenshot 2025-11-04 225315.png>)
 ![Meniu](<nuotraukos/Screenshot 2025-11-04 225844.png>)
+![Meniu](<nuotraukos/Screenshot 2025-11-04 231009.png>)
+![Meniu](<nuotraukos/Screenshot 2025-11-04 230744.png>)
 
 ### Išvesties failai
 
@@ -539,17 +541,7 @@ std::string Blokas::skaiciuotiMerkleRoot() const {
 
 Programa gali atspausdinti Merkle Tree struktūrą:
 
-```
-=== MERKLE TREE (Blokas #1) ===
-
-|- a1b2c3d4e5f6g7h8...  (ROOT)
-  |- 9a8b7c6d5e4f3g2...
-    |- tx1_hash...
-    |- tx2_hash...
-  |- h1i2j3k4l5m6n7o...
-    |- tx3_hash...
-    |- tx4_hash...
-```
+![Transakcijubaseinas](<nuotraukos/Screenshot 2025-11-04 234337.png>)
 
 ## Kandidatinių blokų kasimas (v0.2)
 
