@@ -234,10 +234,6 @@ bool sukurtiBlokaSuKandidatais(
         return false;
     }
     
-    std::cout << "\n";
-    std::cout << "========================================================\n";
-    std::cout << "        KANDIDATINIU BLOKU KASIMO PROCESAS (v0.2)      \n";
-    std::cout << "========================================================\n";
     std::cout << "Kandidatu skaicius: 5\n";
     std::cout << "Transakciju per bloka: " << tx_per_block << "\n";
     std::cout << "Kasimo laikas vienam: ~5 sekundes\n";
