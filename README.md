@@ -220,7 +220,7 @@ Naudojau VU Bitcoin mazgą.
 
 ### Kaip python-bitcoinlib bendrauja su Bitcoin mazgu?
 
-`python-bitcoinlib` biblioteka naudoja **RPC (Remote Procedure Call)** protokolą bendrauti su Bitcoin Core mazgu.
+`python-bitcoinlib` biblioteka naudoja RPC (Remote Procedure Call) protokolą bendrauti su Bitcoin Core mazgu.
 
 **Veikimo principas:**
 
