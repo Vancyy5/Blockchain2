@@ -193,7 +193,6 @@ Mokestis satoshi: 6,534,852 sat
 
 btc_block_validator.py
 
-
 ```
 user35@aleksandr-OptiPlex-790:~/bitcoin_task3$ python3 btc_block_validator.py
 Bitcoin bloko hash'o validatorius
