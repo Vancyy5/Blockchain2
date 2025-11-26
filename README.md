@@ -21,6 +21,7 @@ Operacinė sistema - Windows.
 
 3. Paleisti bitcoin-qt.exe randamą "C:\bitcoin-30.0\bin\bitcoin-qt.exe".
 
+Per Command Prompt:
 
 Kursiokai žinantys mano informaciją gali padaryti taip:
 
@@ -28,9 +29,92 @@ bitcoin-cli -rpcconnect=... -rpcuser=... -rpcpassword=... getblockchaininfo
 
 Ten, kur ..., reikia įrašyti duotą informaciją
 
-![alt text](nuotraukos/Screenshot 2025-11-26 175657.png)
+![nuotrauka](nuotraukos/Screenshot 2025-11-26 175657.png)
 
+C:\bitcoin-30.0\bin>.\bitcoin-qt.exe 
 
+tinklo informacija
+
+```
+C:\bitcoin-30.0\bin>.\bitcoin-cli.exe getnetworkinfo
+{
+  "version": 300000,
+  "subversion": "/Satoshi:30.0.0/",
+  "protocolversion": 70016,
+  "localservices": "0000000000000c08",
+  "localservicesnames": [
+    "WITNESS",
+    "NETWORK_LIMITED",
+    "P2P_V2"
+  ],
+  "localrelay": true,
+  "timeoffset": 0,
+  "networkactive": true,
+  "connections": 3,
+  "connections_in": 0,
+  "connections_out": 3,
+  "networks": [
+    {
+      "name": "ipv4",
+      "limited": false,
+      "reachable": true,
+      "proxy": "",
+      "proxy_randomize_credentials": false
+    },
+    {
+      "name": "ipv6",
+      "limited": false,
+      "reachable": true,
+      "proxy": "",
+      "proxy_randomize_credentials": false
+    },
+    {
+      "name": "onion",
+      "limited": true,
+      "reachable": false,
+      "proxy": "",
+      "proxy_randomize_credentials": false
+    },
+    {
+      "name": "i2p",
+      "limited": true,
+      "reachable": false,
+      "proxy": "",
+      "proxy_randomize_credentials": false
+    },
+    {
+      "name": "cjdns",
+      "limited": true,
+      "reachable": false,
+      "proxy": "",
+      "proxy_randomize_credentials": false
+    }
+  ],
+  "relayfee": 0.00000100,
+  "incrementalfee": 0.00000100,
+  "localaddresses": [
+    {
+      "address": "2a00:1eb8:c0ef:a39d:9be:6261:cfaf:5aab",
+      "port": 8333,
+      "score": 1
+    },
+    {
+      "address": "2a00:1eb8:c0ef:a39d:f99c:c4bc:f7e8:492c",
+      "port": 8333,
+      "score": 1
+    }
+  ],
+  "warnings": [
+  ]
+}
+```
+Jei nori, gali gauti savo transakcijas
+
+```
+C:\bitcoin-30.0\bin>.\bitcoin-cli.exe listtransactions
+[
+]
+```
 
 ## 3 užduotis
 
