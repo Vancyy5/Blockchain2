@@ -4,8 +4,105 @@
 
 ## Merkle medžio implementacija su Libbitcoin 
 
+Mano operacinė sistema - Windows.
 
+Iškildo problemų su Windows.
 
+Senesnės v3.5.x versijos galima būtų kompiliuoti Windows su MinGW, bet reikia rankinio konfigūravimo ir pkg-config neveikia natūraliai. Nauja libbitcoin v3.8 nebuvo skirtas tiesioginiam Windows kompiliavimui.
+
+Iškilo kompiliavimo problemos su Boost.
+
+Senos Boost versijos ir libbitcoin v3.5.0 yra parašytos C++11, bet naujesni Boost (1.81–1.82) reikalauja C++14.
+Ne=inodama išbandžiau Boost 18.2, 18.1. 
+
+Tada bandžiau version3 bet vis tiek nepavyko.
+
+Galiausiai palikau version4, c++20, bet kodą perašiau.
+
+bc::hash_digest → bc::system::hash_digest
+bc::hash_list → bc::system::hashes
+bc::null_hash → bc::system::null_hash
+bc::data_chunk → bc::system::data_chunk
+bc::bitcoin_hash() → bc::system::bitcoin_hash()
+bc::encode_base16() → bc::system::encode_base16()
+
+```
+g++ -std=c++20 -I/usr/local/include -L/usr/local/lib -o merkle merkle.cpp -lbitcoin-system -lboost_system -lboost_thread -lpthread -lsecp256k1 -lssl -lcrypto
+```
+
+![nuotrauka](<nuotraukos/Screenshot 2025-11-26 230536.png>)
+
+merklechange.cpp parašytas kodas naudoti transakcijų hash'us iš bloko 170:
+
+``` 
+=== Bitcoin Block #170 Merkle Tree Calculation ===
+Block mined: January 12, 2009 at 3:30 AM UTC
+Block hash: 00000000d1145790a8694403d4063f323d499e655c83426834d4ce2f8dd4a2ee
+
+Initial transaction hashes from Block #170:
+  TX1 (Coinbase): b1fea52486ce0c62bb442b530a3f0132b826c74e473d1f2c220bfa78111c5082
+  TX2 (to Hal Finney): f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16
+
+Current merkle hash list:
+  768554269dfa94bea17dcac9e4f0e659402d608ae1815fb659f390c6d8da7807
+
+Final Merkle Root (internal byte order):
+768554269dfa94bea17dcac9e4f0e659402d608ae1815fb659f390c6d8da7807
+
+Final Merkle Root (display format - reversed):
+0778dad8c690f359b65f81e18a602d4059e6f0e4c9ca7da1be94fa9d26548576
+
+Expected from Block #170: 7dac2c5666815c17a3b36427de37bb9d2e2c5ccec3f8633eb91a4205cb4c10ff
+
+✓ Merkle root matches Block #170!
+```
+
+![nuotrauka](<nuotraukos/Screenshot 2025-11-26 231358.png>)
+
+https://www.blockchain.com/explorer/blocks/btc/170
+
+Viena iš vietų, į kurią integravau create_merkle() funkciją į savo blockchain projektą:
+
+```
+// LIBBITCOIN create_merkle funkcija
+bc::system::hash_digest create_merkle(bc::system::hashes& merkle)
+{
+    if (merkle.empty())
+        return bc::system::null_hash;
+    else if (merkle.size() == 1)
+        return merkle[0];
+    
+    while (merkle.size() > 1)
+    {
+        if (merkle.size() % 2 != 0)
+            merkle.push_back(merkle.back());
+        
+        assert(merkle.size() % 2 == 0);
+        
+        bc::system::hashes new_merkle;
+        
+        for (auto it = merkle.begin(); it != merkle.end(); it += 2)
+        {
+            bc::system::data_chunk concat_data(bc::system::hash_size * 2);
+            
+            std::copy(it->begin(), it->end(), concat_data.begin());
+            std::copy((it + 1)->begin(), (it + 1)->end(), concat_data.begin() + bc::system::hash_size);
+            
+            // ← BITCOIN DOUBLE SHA-256
+            auto temp_hash = bc::system::sha256::hash(concat_data);
+            bc::system::hash_digest new_root = bc::system::sha256::hash(temp_hash);
+            
+            new_merkle.push_back(new_root);
+        }
+        
+        merkle = new_merkle;
+    }
+    
+    return merkle[0];
+}
+```
+
+![nuotrauka](<nuotraukos/Screenshot 2025-11-26 232842.png>)
 
 ## 2 užduotis
 
@@ -29,7 +126,7 @@ bitcoin-cli -rpcconnect=... -rpcuser=... -rpcpassword=... getblockchaininfo
 
 Ten, kur ..., reikia įrašyti duotą informaciją
 
-![nuotrauka](nuotraukos/Screenshot 2025-11-26 175657.png)
+![nuotrauka](<nuotraukos/Screenshot 2025-11-26 175657.png>)
 
 C:\bitcoin-30.0\bin>.\bitcoin-qt.exe 
 
@@ -148,12 +245,11 @@ python-bitcoinlib/putty.txt išsaugotas visas pokalbis
 
 python-bitcoinlib įdėti visi naudoti failai
 
-# Parašykite programą, kuri apskaičiuoja Bitcoin transakcijos mokestį pagal jos hash'ą.
-
-Išbandykite ją su šia 2019-09-06 įvykusia viena vertingiausių transakcijų
+# Parašykite programą, kuri apskaičiuoja Bitcoin transakcijos mokestį pagal jos hash'ą. Išbandykite ją su šia 2019-09-06 įvykusia viena vertingiausių transakcijų
 
 btc_fee_calculator.py
 
+mano output:
 
 ```
 user35@aleksandr-OptiPlex-790:~/bitcoin_task3$ python3 btc_fee_calculator.py
@@ -276,6 +372,8 @@ Mokestis satoshi: 6,534,852 sat
 # Patikrinkite bloko hash'ą: Parašykite programą, kuri patikrina, ar bloko hash'as yra teisingai apskaičiuotas pagal bloko header'io informaciją.
 
 btc_block_validator.py
+
+mano output:
 
 ```
 user35@aleksandr-OptiPlex-790:~/bitcoin_task3$ python3 btc_block_validator.py

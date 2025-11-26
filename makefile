@@ -1,48 +1,23 @@
-# Kompiliatorius ir parametrai
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2
+CXXFLAGS = -std=c++20 -Wall -Wextra -I/usr/local/include
+LDFLAGS = -L/usr/local/lib
+LIBS = -lbitcoin-system -lboost_system -lboost_thread -lpthread -lsecp256k1 -lssl -lcrypto
 
-# Objektiniai failai
-OBJS = main.o vartotojas.o transakcija.o blokasirgrandine.o hashas.o 
-
-# Vykdomasis failas
+SOURCES = main.cpp vartotojas.cpp transakcija.cpp blokasirgrandine.cpp hashas.cpp
+OBJECTS = $(SOURCES:.cpp=.o)
 TARGET = blockchain
 
-# Pagrindinis taikinys
 all: $(TARGET)
 
-# Kompiliavimas
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS)
+$(TARGET): $(OBJECTS)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-# Objektinių failų kompiliavimas
-main.o: main.cpp vartotojas.h transakcija.h blokasirgrandine.h lib.h laikas.h
-	$(CXX) $(CXXFLAGS) -c main.cpp
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-vartotojas.o: vartotojas.cpp vartotojas.h lib.h
-	$(CXX) $(CXXFLAGS) -c vartotojas.cpp
-
-transakcija.o: transakcija.cpp transakcija.h vartotojas.h hashas.h lib.h 
-	$(CXX) $(CXXFLAGS) -c transakcija.cpp
-
-blokasirgrandine.o: blokasirgrandine.cpp blokasirgrandine.h transakcija.h hashas.h lib.h laikas.h
-	$(CXX) $(CXXFLAGS) -c blokasirgrandine.cpp
-
-laikas.o: laikas.cpp laikas.h lib.h
-	$(CXX) $(CXXFLAGS) -c laikas.cpp	
-
-hashas.o: hashas.cpp hashas.h lib.h
-	$(CXX) $(CXXFLAGS) -c hashas.cpp
-
-# Valymas
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJECTS) $(TARGET)
 
-# Paleidimas
-run: $(TARGET)
-	./$(TARGET)
-
-# Rebuild
 rebuild: clean all
 
-.PHONY: all clean run rebuild
+.PHONY: all clean rebuild
