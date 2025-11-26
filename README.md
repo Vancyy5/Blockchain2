@@ -111,7 +111,7 @@ Pagrindinė funkcija `create_merkle()` implementuoja Merkle medžio šaknies ska
 
 ## 2 užduotis: Pilno Bitcoin mazgo (Bitcoin Core) įdiegimas
 
-Kadangi neturėjau pakankamai vietos savo kompiuteryje (~140GB reikia), siuntėsi Bitcoin Core mazgą.
+Kadangi neturėjau pakankamai vietos savo kompiuteryje, siunčiausi 140GB Bitcoin Core mazgą.
 
 ### Įdiegimo žingsniai (Windows):
 
